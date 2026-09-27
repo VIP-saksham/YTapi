@@ -117,6 +117,17 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(user_id)
             );
 
+
+            CREATE TABLE IF NOT EXISTS redeem_codes (
+                code        TEXT    PRIMARY KEY,
+                plan        TEXT    NOT NULL,
+                created_by  INTEGER DEFAULT 0,
+                created_at  TEXT    DEFAULT (datetime('now')),
+                used_by     INTEGER DEFAULT 0,
+                used_at     TEXT    DEFAULT '',
+                is_used     INTEGER DEFAULT 0
+            );
+
             CREATE TABLE IF NOT EXISTS usage_logs (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id     INTEGER NOT NULL,
@@ -1345,3 +1356,63 @@ def cache_search(query: str, limit: int, results: list):
             """, (key, _json.dumps(results)))
     except Exception as e:
         logger.warning(f"cache_search: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Redeem codes (bot + website dono jagah kaam karte hain)
+# ---------------------------------------------------------------------------
+
+def create_redeem_code(plan: str, created_by: int = 0, count: int = 1) -> list:
+    """Naye redeem codes generate karo. Plan: basic/pro/ultra."""
+    if plan not in PLANS or plan == "free":
+        raise ValueError(f"Invalid plan '{plan}' for redeem code")
+    codes = []
+    with get_conn() as conn:
+        for _ in range(max(1, count)):
+            code = "KEYARA-" + "".join(
+                secrets.choice(string.ascii_uppercase + string.digits) for _ in range(10)
+            )
+            conn.execute(
+                "INSERT OR IGNORE INTO redeem_codes (code, plan, created_by) VALUES (?, ?, ?)",
+                (code, plan, created_by),
+            )
+            codes.append(code)
+    return codes
+
+
+def list_redeem_codes(only_unused: bool = True) -> list:
+    q = "SELECT * FROM redeem_codes"
+    if only_unused:
+        q += " WHERE is_used = 0"
+    q += " ORDER BY created_at DESC LIMIT 50"
+    with get_conn() as conn:
+        return conn.execute(q).fetchall()
+
+
+def redeem_code(code: str, user_id: int) -> dict:
+    """Code redeem karo. Returns dict: ok/plan/error. Idempotent per-user safety."""
+    code = (code or "").strip().upper()
+    if not code:
+        return {"ok": False, "error": "empty_code"}
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM redeem_codes WHERE code = ?", (code,)
+        ).fetchone()
+        if not row:
+            return {"ok": False, "error": "invalid_code"}
+        if row["is_used"]:
+            return {"ok": False, "error": "already_used"}
+        # mark used
+        conn.execute(
+            "UPDATE redeem_codes SET is_used = 1, used_by = ?, "
+            "used_at = datetime('now') WHERE code = ? AND is_used = 0",
+            (user_id, code),
+        )
+        if conn.total_changes == 0:
+            return {"ok": False, "error": "already_used"}
+    # key upgrade (create_key old key deactivate karke nayi deta hai)
+    # FK-safe: pehle users row ensure karo (website users bot /start na bhi karein)
+    upsert_user(user_id, "", "")
+    plan = row["plan"]
+    new_key = upgrade_plan(user_id, plan)
+    return {"ok": True, "plan": plan, "key": new_key}

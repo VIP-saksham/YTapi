@@ -97,6 +97,7 @@ IST = pytz.timezone("Asia/Kolkata")
 def main_menu_kb() -> InlineKeyboardMarkup:
     rows = [
         [InlineKeyboardButton("🔑 My API Key",       callback_data="view_key")],
+        [InlineKeyboardButton("🌐 Website Sign-In",  callback_data="web_signin")],
         [InlineKeyboardButton("📊 My Usage",         callback_data="my_usage")],
         [InlineKeyboardButton("💎 Plans & Pricing",  callback_data="plans")],
         [
@@ -885,6 +886,9 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     db.upsert_user(uid, user.username, user.first_name)
 
     # ── back ──────────────────────────────────────────────────────────────
+    if data == "web_signin":
+        return await _cb_web_signin(q, ctx, user)
+
     if data == "back_main":
         ctx.user_data.pop("awaiting", None)
         key_row = _ensure_key(uid)
@@ -1506,6 +1510,8 @@ async def run_bot():
     app.add_handler(CommandHandler("reject",   cmd_reject,  filters=PRIVATE))
     app.add_handler(CommandHandler("payments", cmd_payments, filters=PRIVATE))
     app.add_handler(CommandHandler("reply",    cmd_reply,   filters=PRIVATE))
+    app.add_handler(CommandHandler("redeemcode", cmd_redeemcode, filters=PRIVATE))
+    app.add_handler(CommandHandler("redeem", cmd_redeem, filters=PRIVATE))
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(
         PRIVATE & (filters.TEXT | filters.PHOTO) & ~filters.COMMAND, on_message))
@@ -1541,6 +1547,88 @@ async def run_bot():
 
 def main():
     asyncio.run(run_bot())
+
+
+
+
+# ?? Website sign-in + redeem (Buffy) ????????????????????????????????????
+import hashlib as _hl
+
+def _web_token(uid: int) -> str:
+    return _hl.sha256(f"{uid}:{BOT_TOKEN}".encode()).hexdigest()[:16]
+
+
+async def _cb_web_signin(q, ctx, user):
+    uid = user.id
+    tok = _web_token(uid)
+    web = "https://keyaraapi.pages.dev"
+    code = f"web-{uid}-{tok}"
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("? Open Website (Signed In)", url=f"{web}/#key={code}")],
+        [InlineKeyboardButton("Main Menu", callback_data="back_main")],
+    ])
+    await safe_edit(
+        q,
+        f"? *Website Sign-In*\n\n"
+        f"1?? Neeche button dabao \u2013 website khul jayegi, signed-in ke saath.\n"
+        f"2?? Ya manual code paste karo website ke Sign-In box me:\n"
+        f"`{code}`\n\n"
+        f"Same API key website + bot dono jagah chalegi. ?",
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=kb,
+    )
+
+
+async def cmd_redeemcode(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    if uid not in ADMIN_IDS:
+        return await update.message.reply_text("? Sirf owner ye command use kar sakta hai.")
+    parts = (update.message.text or "").split()
+    if len(parts) < 2 or parts[1].lower() not in ("basic", "pro", "ultra"):
+        return await update.message.reply_text(
+            "Usage: `/redeemcode pro [count]`\n"
+            "Plans: basic (Starter), pro (Pro), ultra (Ultra)",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+    plan = parts[1].lower()
+    count = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 1
+    try:
+        codes = db.create_redeem_code(plan, created_by=uid, count=count)
+    except Exception as e:
+        return await update.message.reply_text(f"Error: {e}")
+    txt = "\n".join(f"`{c}`" for c in codes)
+    await update.message.reply_text(
+        f"? *{plan.upper()} code{'s' if count > 1 else ''} ready:*\n\n{txt}\n\n"
+        f"User bot me `/redeem <code>` ya website Redeem box me daalega.",
+        parse_mode=ParseMode.MARKDOWN,
+    )
+
+
+async def cmd_redeem(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    parts = (update.message.text or "").split()
+    if len(parts) < 2:
+        return await update.message.reply_text(
+            "Usage: `/redeem KEYARA-XXXXXXXXXX`",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+    res = db.redeem_code(parts[1], uid)
+    if not res.get("ok"):
+        errs = {
+            "invalid_code": "Galat code!",
+            "already_used": "Ye code pehle hi use ho chuka hai.",
+            "empty_code": "Code khali hai.",
+        }
+        return await update.message.reply_text(
+            errs.get(res.get("error"), "Redemption fail."))
+    key_row = db.validate_key(res["key"])
+    await update.message.reply_text(
+        f"? *{res['plan'].upper()} PLAN ACTIVATED!* \n\n"
+        f"Key: `{res['key']}`\n"
+        f"Expires: {fmt_ist(key_row['expires_at'])}\n\n"
+        f"Yehi key bot + website dono jagah chalegi. /mykey se details.",
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 if __name__ == "__main__":

@@ -1816,3 +1816,70 @@ async def _prewarm_loop():
 async def _prewarm_start():
     asyncio.create_task(_prewarm_loop())
 
+
+# ---------------------------------------------------------------------------
+# WEBSITE <-> BOT shared key system (Buffy)
+# ---------------------------------------------------------------------------
+from pydantic import BaseModel as _BM
+from typing import Optional as _Opt
+
+class _RedeemBody(_BM):
+    code: str
+    user_id: int = 0
+    username: str = ""
+
+class _SigninBody(_BM):
+    code: str
+    username: str = ""
+    first_name: str = ""
+
+
+@app.get("/site-freekey", tags=["Account"], summary="Website: free key instantly (no login)")
+async def site_freekey(request: Request):
+    """Website 'Get Free Key' button -> instantly mints a free key bound to a
+    website-generated guest id (stored client-side). Same key works in bot too
+    jab wo user bot start karega apne TG id se (alag row, no clash)."""
+    import secrets as _s
+    # FK-safe: pehle guest user row, phir key (website guest account)
+    guest_id = 900000000000 + _s.randbits(30)
+    db.upsert_user(guest_id, "webguest", "Website Guest")
+    key = db.create_key(guest_id, "free")
+    return {"ok": True, "api_key": key, "plan": "free",
+            "rpd": db.PLANS["free"]["rpd"], "base_url": str(request.base_url).rstrip("/")}
+
+
+@app.post("/site-signin", tags=["Account"], summary="Website: sign in via Telegram code")
+async def site_signin(body: _SigninBody):
+    """Code format: web-<uid>-<hash16> where hash16 = sha256(uid:BOT_TOKEN)[:16].
+    Forge-proof: hash sirf bot + API (same .env) hi bana sakte hain."""
+    import hashlib as _hl, os as _os
+    code = (body.code or "").strip()
+    try:
+        _, uid_s, tok = code.split("-", 2)
+        uid = int(uid_s)
+    except Exception:
+        return {"ok": False, "error": "bad_code"}
+    secret = _os.getenv("TELEGRAM_BOT_TOKEN", "")
+    expect = _hl.sha256(f"{uid}:{secret}".encode()).hexdigest()[:16]
+    if tok != expect:
+        return {"ok": False, "error": "bad_code"}
+    db.upsert_user(uid, body.username or "", body.first_name or "")
+    key_row = db.get_active_key(uid)
+    if not key_row:
+        key = db.create_key(uid, "free")
+        key_row = db.validate_key(key)
+    return {"ok": True, "api_key": key_row["key"], "plan": key_row["plan"],
+            "expires_at": key_row["expires_at"]}
+
+
+@app.post("/redeem", tags=["Account"], summary="Redeem a plan code (KEYARA-XXXXXXXXXX)")
+async def redeem_endpoint(body: _RedeemBody):
+    """Code redeem karke plan activate. Bot aur website dono se same endpoint."""
+    if not body.user_id:
+        return {"ok": False, "error": "user_id_required",
+                "message": "Pehle Telegram bot se sign-in code lo (@KeyaraApiBot -> Website Sign-In)."}
+    res = db.redeem_code(body.code, body.user_id)
+    if not res.get("ok"):
+        return res
+    return {"ok": True, "plan": res["plan"], "api_key": res["key"],
+            "message": f"{res['plan'].upper()} plan activated!"}
