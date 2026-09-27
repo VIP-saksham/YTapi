@@ -5,3 +5,10 @@ cookies/
 logs/
 *.db
 *.log
+venv/
+_site/*.bak
+test.log
+service.log
+keybot.log
+supervisor.log
+*.bak*

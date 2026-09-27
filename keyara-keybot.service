@@ -1,0 +1,18 @@
+[Unit]
+Description=KeyaraAPI Key Bot — Telegram key management (VIP-saksham/api)
+After=network.target keyara-api.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/nakshu/keyaraapi
+Environment=PATH=/root/.deno/bin:/usr/local/bin:/usr/bin:/bin
+Environment=XDG_CONFIG_HOME=/root/.config
+ExecStart=/root/nakshu/keyaraapi/venv/bin/python tgbot.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/root/nakshu/keyaraapi/keybot.log
+StandardError=append:/root/nakshu/keyaraapi/keybot.log
+
+[Install]
+WantedBy=multi-user.target

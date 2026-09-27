@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KeyaraAPI ⚡ Blazing-Fast YouTube Extraction API</title>
+<meta name="description" content="Sub-second YouTube search, 20ms cached stream URLs, cookies-powered extraction. Free tier: 50 requests. Powered by VIP-saksham.">
+<style>
+:root{--bg:#05060a;--card:#0b0e17;--card2:#0f1320;--line:#1c2333;--txt:#e6edf3;--dim:#8b98ab;
+--cyan:#00d9ff;--mag:#ff00e5;--grn:#00ffc3;--yel:#ffcc00}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow-x:hidden}
+a{color:var(--cyan);text-decoration:none}
+.mono{font-family:'Cascadia Code','Fira Code',Consolas,monospace}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+
+/* nav */
+nav{display:flex;justify-content:space-between;align-items:center;padding:20px 0}
+.logo{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.logo b{background:linear-gradient(90deg,var(--cyan),var(--mag));-webkit-background-clip:text;background-clip:text;color:transparent}
+.navlinks a{margin-left:22px;color:var(--dim);font-size:14px;transition:.2s}
+.navlinks a:hover{color:var(--cyan)}
+
+/* hero */
+.hero{padding:90px 0 60px;text-align:center;position:relative}
+.hero::before{content:'';position:absolute;inset:0;background:
+ radial-gradient(600px 300px at 50% 0%,rgba(0,217,255,.12),transparent),
+ radial-gradient(500px 260px at 80% 20%,rgba(255,0,229,.08),transparent);pointer-events:none}
+.badge{display:inline-block;padding:7px 18px;border:1px solid var(--line);border-radius:99px;
+ background:var(--card);color:var(--dim);font-size:13px;margin-bottom:26px}
+.badge i{color:var(--grn);font-style:normal;animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.25}}
+h1{font-size:clamp(38px,6vw,64px);font-weight:900;line-height:1.08;letter-spacing:-2px}
+h1 span{background:linear-gradient(90deg,var(--cyan) 10%,var(--mag) 60%,var(--yel));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--dim);font-size:18px;max-width:640px;margin:22px auto 34px;line-height:1.6}
+.cta{display:inline-block;padding:14px 34px;margin:0 8px 10px;border-radius:12px;font-weight:700;font-size:15px;transition:.2s}
+.cta-p{background:linear-gradient(90deg,var(--cyan),#0091ff);color:#001018;box-shadow:0 0 30px rgba(0,217,255,.35)}
+.cta-p:hover{transform:translateY(-2px);box-shadow:0 0 45px rgba(0,217,255,.55)}
+.cta-s{border:1px solid var(--line);background:var(--card);color:var(--txt)}
+.cta-s:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:60px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;text-align:center}
+.stat b{display:block;font-size:30px;font-weight:900;background:linear-gradient(90deg,var(--cyan),var(--mag));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat span{color:var(--dim);font-size:13px}
+
+/* sections */
+section{padding:56px 0}
+h2{font-size:32px;font-weight:800;text-align:center;margin-bottom:8px;letter-spacing:-1px}
+.ssub{text-align:center;color:var(--dim);margin-bottom:40px;font-size:15px}
+
+/* endpoints */
+.code{background:#080b12;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.code .bar{display:flex;align-items:center;gap:8px;padding:11px 16px;background:var(--card2);border-bottom:1px solid var(--line);font-size:13px;color:var(--dim)}
+.code .bar b{color:var(--grn);font-weight:600}
+.code pre{padding:16px;font-size:13.5px;line-height:1.65;color:#a5b4cf;overflow-x:auto}
+.code pre .m{color:var(--mag)} .code pre .u{color:var(--cyan)} .code pre .g{color:var(--grn)}
+
+/* pricing */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.plan{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px 24px;position:relative;transition:.25s}
+.plan:hover{transform:translateY(-6px);border-color:var(--cyan);box-shadow:0 14px 40px rgba(0,217,255,.12)}
+.plan.hot{border-color:var(--mag);background:linear-gradient(180deg,rgba(255,0,229,.07),var(--card))}
+.tag{position:absolute;top:-12px;left:50%;transform:translateX(-50%);padding:5px 16px;border-radius:99px;
+ font-size:11px;font-weight:800;letter-spacing:1px;background:linear-gradient(90deg,var(--mag),#a100ff);color:#fff}
+.plan h3{font-size:15px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.price{font-size:42px;font-weight:900;margin:12px 0 2px}
+.price small{font-size:15px;color:var(--dim);font-weight:400}
+.req{color:var(--cyan);font-weight:700;font-size:15px;margin-bottom:18px}
+.plan ul{list-style:none;margin-bottom:24px}
+.plan li{padding:7px 0;color:var(--dim);font-size:14px}
+.plan li::before{content:'✓ ';color:var(--grn);font-weight:800}
+.buy{display:block;text-align:center;padding:12px;border-radius:10px;font-weight:700;font-size:14px;
+ border:1px solid var(--line);color:var(--txt);transition:.2s}
+.buy:hover{background:linear-gradient(90deg,var(--cyan),#0091ff);color:#001018;border-color:transparent}
+.hot .buy{background:linear-gradient(90deg,var(--mag),#a100ff);border:none;color:#fff}
+
+/* features */
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.f{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;transition:.2s}
+.f:hover{border-color:var(--mag)}
+.f .ico{font-size:30px;margin-bottom:12px}
+.f b{display:block;font-size:16px;margin-bottom:6px}
+.f p{color:var(--dim);font-size:13.5px;line-height:1.55}
+
+footer{border-top:1px solid var(--line);margin-top:60px;padding:34px 0;text-align:center;color:var(--dim);font-size:13.5px}
+footer a{color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <div class="logo">⚡ Keyara<b>API</b></div>
+  <div class="navlinks">
+    <a href="#endpoints">Endpoints</a><a href="#pricing">Pricing</a>
+    <a href="https://github.com/VIP-saksham/api">GitHub</a>
+    <a href="https://t.me/HellAPIBot">Get Key</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="badge"><i>●</i> LIVE — powered by @VIP-saksham</div>
+  <h1>YouTube API jo <span>HADDI</span> se fast hai</h1>
+  <p class="sub">Sub-second search. 20ms cached stream URLs. Cookies + OAuth powered extraction jo kabhi rate-limit nahi hota. Tumhari music bot ki asli engine.</p>
+  <a class="cta cta-p" href="https://t.me/HellAPIBot">🚀 Get FREE Key</a>
+  <a class="cta cta-s" href="https://github.com/VIP-saksham/api">📖 Docs</a>
+</div>
+
+<div class="stats">
+  <div class="stat"><b>20ms</b><span>cached stream URL</span></div>
+  <div class="stat"><b>0.5s</b><span>cold search (innertube)</span></div>
+  <div class="stat"><b>26+</b><span>API endpoints</span></div>
+  <div class="stat"><b>24/7</b><span>auto-heal uptime</span></div>
+</div>
+
+<section id="endpoints">
+  <h2>Endpoints jo kaam karte hain</h2>
+  <p class="ssub">Ek key, infinite possibilities — music bots, downloaders, AI agents</p>
+
+  <div class="code"><div class="bar">🎵 <b>/api/stream</b> — instant audio/video URL</div>
+  <pre>GET <span class="u">/api/stream?url=https://youtu.be/dQw4w9WgXcQ&amp;type=audio</span>&amp;api_key=<span class="g">YOUR_KEY</span>
+
+→ { <span class="m">"stream_url"</span>: <span class="g">"https://.../file/xyz"</span>, <span class="m">"cached"</span>: true, <span class="m">"latency"</span>: <span class="g">"0.02s"</span> }</pre></div>
+
+  <div class="code"><div class="bar">🔍 <b>/search</b> — YouTube search, innertube fast-path</div>
+  <pre>GET <span class="u">/search?q=kesariya&amp;limit=5</span>&amp;api_key=<span class="g">YOUR_KEY</span>
+
+→ { <span class="m">"results"</span>: [ { <span class="m">"id"</span>: <span class="g">"BddP6PYo2gs"</span>, <span class="m">"title"</span>: <span class="g">"Kesariya — Brahmastra"</span>, ... } ] }</pre></div>
+
+  <div class="code"><div class="bar">📡 <b>/info</b> + <b>/formats</b> + <b>/file/{id}</b> — full toolkit</div>
+  <pre>GET <span class="u">/info?url=YT_URL</span>&amp;api_key=<span class="g">KEY</span>   → title, duration, thumbnail, uploader
+GET <span class="u">/file/{id}?api_key=KEY</span>          → zero-proxy audio/video file streaming</pre></div>
+</section>
+
+<section id="pricing">
+  <h2>Simple Pricing 💸</h2>
+  <p class="ssub">Pehle free try karo — pasand aaye to upgrade. Keys instant milti hain Telegram pe.</p>
+  <div class="plans">
+
+    <div class="plan">
+      <h3>Free</h3>
+      <div class="price">₹0</div>
+      <div class="req">50 requests</div>
+      <ul><li>All endpoints access</li><li>Audio + video streams</li><li>Community support</li><li>No credit card needed</li></ul>
+      <a class="buy" href="https://t.me/HellAPIBot">Start Free →</a>
+    </div>
+
+    <div class="plan">
+      <h3>Starter</h3>
+      <div class="price">₹99</div>
+      <div class="req">1,000 requests</div>
+      <ul><li>Everything in Free</li><li>Priority extraction queue</li><li>Login-cookies powered</li><li>Usage stats in bot</li></ul>
+      <a class="buy" href="https://t.me/HellAPIBot">Buy on Telegram →</a>
+    </div>
+
+    <div class="plan hot">
+      <div class="tag">🔥 POPULAR</div>
+      <h3>Pro</h3>
+      <div class="price">₹199</div>
+      <div class="req">3,000 requests</div>
+      <ul><li>Everything in Starter</li><li>OAuth visitor rotation</li><li>Race-extract pre-caching</li><li>Fastest cached latency</li></ul>
+      <a class="buy" href="https://t.me/HellAPIBot">Buy on Telegram →</a>
+    </div>
+
+    <div class="plan">
+      <h3>Ultra</h3>
+      <div class="price">₹490</div>
+      <div class="req">9,000 requests</div>
+      <ul><li>Everything in Pro</li><li>Best per-request rate</li><li>High-priority support</li><li>Perfect for big bots</li></ul>
+      <a class="buy" href="https://t.me/HellAPIBot">Buy on Telegram →</a>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>Kyu KeyaraAPI? 🤔</h2>
+  <p class="ssub">Kyunki speed luck nahi, engineering hai</p>
+  <div class="feat">
+    <div class="f"><div class="ico">⚡</div><b>Insane Speed</b><p>Innertube fast-path search + cached stream URLs. Naya song bhi 0.5s me, purana 20ms me.</p></div>
+    <div class="f"><div class="ico">🍪</div><b>Anti-Rate-Limit</b><p>Login cookies + OAuth visitor rotation — IP block hote hi fallback race-mode activate.</p></div>
+    <div class="f"><div class="ico">🤖</div><b>Fully Automated</b><p>@HellAPI bot se key lo, usage dekho, upgrade karo — sab Telegram pe, instant delivery.</p></div>
+    <div class="f"><div class="ico">🛡️</div><b>Self-Healing</b><p>Auto-restart supervisor, memory brakes, zombie reaper — 24/7 uptime, zero babysitting.</p></div>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 Saksham Swaroop (@truenakshu) · <a href="https://github.com/VIP-saksham">GitHub: VIP-saksham</a> · <a href="https://t.me/TrueNakshu">Telegram</a></p>
+  <p style="margin-top:8px">Engine behind <a href="https://github.com/VIP-saksham/KeyaraMusic">KeyaraMusic</a> · Built with FastAPI + yt-dlp</p>
+</footer>
+
+</div>
+</body>
+</html>

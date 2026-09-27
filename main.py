@@ -25,7 +25,8 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse, FileResponse, Response
+from pathlib import Path
+from fastapi.responses import JSONResponse, StreamingResponse, FileResponse, Response, HTMLResponse
 from dotenv import load_dotenv
 
 from ytdlp import (
@@ -1661,6 +1662,23 @@ def admin_restart_services(request: Request):
 # ---------------------------------------------------------------------------
 # Global exception handler
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# / — Flex landing page (KeyaraAPI)
+# ---------------------------------------------------------------------------
+
+_SITE = Path(__file__).resolve().parent / "_site" / "index.html"
+
+
+@app.get("/", include_in_schema=False)
+async def landing_page():
+    """Flex landing — pricing, endpoints, docs links."""
+    try:
+        return HTMLResponse(_SITE.read_text(encoding="utf-8"))
+    except Exception:
+        return HTMLResponse("<h1>KeyaraAPI</h1><p>API is running. See /docs</p>")
+
 
 @app.exception_handler(Exception)
 async def _global_handler(request: Request, exc: Exception):

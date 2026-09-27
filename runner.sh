@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 # runner.sh — container-friendly supervisor (systemd nahi hai is VPS pe)
-# API + Bot dono chalata hai; koi mare ya .restart_flag mile to dono restart.
-# flock-based lock — command-line pattern matching ki galtiyan nahi hoti.
-DEPLOY_DIR="${DEPLOY_DIR:-/root/hellapi}"
+# KeyaraAPI: API + Key-Bot dono chalata hai; koi mare ya .restart_flag mile to dono restart.
+DEPLOY_DIR="${DEPLOY_DIR:-/root/nakshu/keyaraapi}"
 cd "$DEPLOY_DIR" || exit 1
 
 mkdir -p logs
 
 # ── Single-instance lock (flock) ─────────────────────────────────
-exec 9>/tmp/hellapi_runner.lock
+exec 9>/tmp/keyaraapi_runner.lock
 if ! flock -n 9; then
   echo "[runner] already running — exit ($$) at $(date)" >> logs/runner.log
   exit 0
