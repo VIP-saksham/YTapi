@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+cookies/
+logs/
+*.db
+*.log
