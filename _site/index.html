@@ -301,10 +301,10 @@ footer b{color:var(--txt)}
     <div class="dpane on">
 <pre><span class="c"># 1) Key lo — bot se ya upar "Get Free Key" se</span>
 <span class="c"># 2) Koi bhi endpoint test karo:</span>
-curl <span class="s">"https://sole-merry-listings-studies.trycloudflare.com/search?q=kesariya&amp;api_key=YOUR_KEY"</span>
+curl <span class="s">"https://keyaraapi.pages.dev/search?q=kesariya&amp;api_key=YOUR_KEY"</span>
 
 <span class="c"># 3) Stream URL (audio):</span>
-curl <span class="s">"https://sole-merry-listings-studies.trycloudflare.com/api/stream?url=https://youtu.be/dQw4w9WgXcQ&amp;type=audio&amp;api_key=YOUR_KEY"</span>
+curl <span class="s">"https://keyaraapi.pages.dev/api/stream?url=https://youtu.be/dQw4w9WgXcQ&amp;type=audio&amp;api_key=YOUR_KEY"</span>
 
 <span class="k">Response</span>: {"ok": true, "stream_url": "https://…googlevideo.com/videoplayback?…"} <span class="c"># VC me direct play</span></pre>
     </div>
@@ -312,7 +312,7 @@ curl <span class="s">"https://sole-merry-listings-studies.trycloudflare.com/api/
       <p style="color:var(--mut);font-size:.88rem;margin-bottom:14px">Key ke saath <b>yt.py</b> download karo (apne bot ke
       <code>platforms/</code> me drop karo) aur <code>.env</code> me 2 lines daalo — bas, bot chalu. 🚀</p>
 <pre><span class="c"># .env — bot me add karo (KeyaraAPI)</span>
-<span class="k">HELLAPI_URL</span>=<span class="s">https://sole-merry-listings-studies.trycloudflare.com</span>
+<span class="k">HELLAPI_URL</span>=<span class="s">https://keyaraapi.pages.dev</span>
 <span class="k">HELLAPI_KEY</span>=<span class="s">Keyara…your-key…</span></pre>
       <div class="row">
         <a class="btn btn-p" id="ytpyBtn2" href="#" onclick="return ytPy()">⬇️ Download yt.py (key ke saath)</a>
@@ -354,7 +354,7 @@ curl <span class="s">"https://sole-merry-listings-studies.trycloudflare.com/api/
 <div class="toast" id="toast"></div>
 
 <script>
-const API = "https://sole-merry-listings-studies.trycloudflare.com";
+const API = "";  // same-origin: Pages worker backend ko proxy karta hai
 const $ = id => document.getElementById(id);
 const LS = "keyara_auth_v1";
 

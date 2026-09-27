@@ -32,10 +32,13 @@ OLDURL=$(cat "$URLF" 2>/dev/null)
 echo "$URL" > "$URLF"
 echo "[$(date '+%F %T')] tunnel UP: $URL (old: $OLDURL)" >> "$LOG"
 
-# Agar URL badla hai to tgbot restart (api_url.txt se naya URL lega)
+# Agar URL badla hai to worker regenerate + deploy + bots restart
 if [ -n "$OLDURL" ] && [ "$OLDURL" != "$URL" ]; then
   echo "$URL" > /root/nakshu/keyaraapi/api_url.txt
-  echo "[$(date '+%F %T')] URL changed -> restarting tgbot" >> "$LOG"
+  echo "[$(date '+%F %T')] URL changed -> regenerating worker + redeploying" >> "$LOG"
+  sed -i "s|const BACKEND = .*|const BACKEND = \"$URL\";|" /root/nakshu/keyaraapi/_site/_worker.js 2>/dev/null
+  rm -f /root/nakshu/keyaraapi/.site_hash
+  bash /root/nakshu/keyaraapi/autodeploy.sh || true
   pkill -f '[t]gbot.py' || true
 fi
 exit 0
