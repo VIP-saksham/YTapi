@@ -2534,21 +2534,29 @@ def _race_extract(url: str, fmt: str) -> dict:
 
 def _innertube_search_sync(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
     """Fast search via YouTube innertube API (~0.3s, yt-dlp ke bina)."""
-    import json as _json, urllib.request as _ureq
+    import json as _json
     body = {
         "context": {"client": {"clientName": "WEB", "clientVersion": "2.20240101.00.00",
                                "hl": "en", "gl": "IN"}},
         "query": query,
     }
-    req = _ureq.Request(
-        "https://www.youtube.com/youtubei/v1/search?prettyPrint=false",
-        data=_json.dumps(body).encode(),
-        headers={"Content-Type": "application/json",
-                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-                 "Origin": "https://www.youtube.com"},
-        method="POST")
-    with _ureq.urlopen(req, timeout=6) as resp:
-        data = _json.loads(resp.read().decode())
+    _sess = _innertube_session()
+    if _sess is not None:
+        with _sess.post(
+            "https://www.youtube.com/youtubei/v1/search?prettyPrint=false",
+            json=body, timeout=6) as resp:
+            data = resp.json()
+    else:
+        import urllib.request as _ureq
+        req = _ureq.Request(
+            "https://www.youtube.com/youtubei/v1/search?prettyPrint=false",
+            data=_json.dumps(body).encode(),
+            headers={"Content-Type": "application/json",
+                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                     "Origin": "https://www.youtube.com"},
+            method="POST")
+        with _ureq.urlopen(req, timeout=6) as resp:
+            data = _json.loads(resp.read().decode())
     out = []
 
     def _walk(o):
@@ -2706,3 +2714,34 @@ async def search_youtube(query: str, max_results: int = 5) -> List[Dict[str, Any
     except Exception:
         pass
     return results
+
+
+
+# ── Persistent innertube session (TCP+TLS reuse → search ~50ms) ──────────────
+import threading as _th
+_INNERTUBE_LOCK = _th.Lock()
+_INNERTUBE_SESS = None
+
+
+def _innertube_session():
+    """Lazy singleton requests.Session (keep-alive pool) for innertube API."""
+    global _INNERTUBE_SESS
+    if _INNERTUBE_SESS is None:
+        with _INNERTUBE_LOCK:
+            if _INNERTUBE_SESS is None:
+                try:
+                    import requests as _requests
+                    s = _requests.Session()
+                    s.headers.update({
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                        "Origin": "https://www.youtube.com",
+                        "Referer": "https://www.youtube.com/",
+                    })
+                    a = _requests.adapters.HTTPAdapter(
+                        pool_connections=2, pool_maxsize=4, max_retries=1)
+                    s.mount("https://", a)
+                    _INNERTUBE_SESS = s
+                except Exception:
+                    _INNERTUBE_SESS = False
+    return _INNERTUBE_SESS or None
+

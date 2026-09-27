@@ -19,6 +19,7 @@ import os
 import logging
 import re
 import asyncio
+import time
 import threading
 from datetime import datetime, timedelta
 from typing import Optional
@@ -221,6 +222,27 @@ def _embed_key(url: str, request: Request) -> str:
 
 
 
+_KEY_CACHE: dict = {}
+_KEY_CACHE_TTL = 90  # seconds
+
+
+def _key_cache_get(key: str):
+    v = _KEY_CACHE.get(key)
+    if not v:
+        return None
+    payload, ts = v
+    if (time.time() - ts) > _KEY_CACHE_TTL:
+        _KEY_CACHE.pop(key, None)
+        return None
+    return payload
+
+
+def _key_cache_put(key: str, payload: dict):
+    _KEY_CACHE[key] = (payload, time.time())
+    if len(_KEY_CACHE) > 2000:
+        _KEY_CACHE.clear()
+
+
 def require_valid_key(request: Request) -> dict:
     key = _extract_key(request)
     ip  = _get_client_ip(request)
@@ -238,7 +260,9 @@ def require_valid_key(request: Request) -> dict:
         )
 
     # ── Key validation ───────────────────────────────────────────────────
-    key_row = db.validate_key(key)
+    key_row = _key_cache_get(key) or db.validate_key(key)
+    if key_row:
+        _key_cache_put(key, key_row)
     if not key_row:
         result = record_invalid_attempt(ip)
         # Log failed attempt
@@ -560,10 +584,47 @@ async def yt_search(
                 "message": "Song-name search is disabled for this API.",
             },
         )
+    # ⚡ LIBRARY-FIRST: pehle apni DB (~5ms) — YouTube round-trip sirf naye songs pe
+    try:
+        _lib = await asyncio.to_thread(db.library_search, q, max(1, int(limit)))
+        if _lib:
+            _results = []
+            for r in _lib:
+                try:
+                    vid = str(r["video_id"]).strip()[:11]
+                except Exception:
+                    vid = str((r.get("video_id") if isinstance(r, dict) else "") or "").strip()[:11]
+                if len(vid) != 11:
+                    continue
+                try:
+                    _title = r["title"]
+                    _up = r["uploader"]
+                    _dur = r["duration_sec"]
+                    _th = r["thumbnail"]
+                except Exception:
+                    _title = r.get("title")
+                    _up = r.get("uploader")
+                    _dur = r.get("duration_sec")
+                    _th = r.get("thumbnail")
+                _results.append({
+                    "id": vid,
+                    "title": _title or "Unknown",
+                    "uploader": _up or "",
+                    "duration": _dur,
+                    "url": f"https://www.youtube.com/watch?v={vid}",
+                    "thumbnail": _th or f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg",
+                })
+            if _results:
+                _log_bg(key_info, "/search", q, media_type="search")
+                return {"ok": True, "query": q, "count": len(_results),
+                        "results": _results, "source": "library-cache"}
+    except Exception:
+        pass
+
     try:
         results = await search_youtube(q, max_results=limit)
         for r in results:
-            _lib_save(r, source="search")     # song library me save
+            _lib_save_bg(r, source="search")
         # 🔥 PRE-ARCHIVE: top-3 results BG me race-extract — first-play fast
         _vids = []
         for r in results:
@@ -749,8 +810,8 @@ async def api_stream(
         fmt      = "bestaudio/best" if type == "audio" else "bestvideo+bestaudio/best"
         resolved = await _resolve_url(q)
         info, result = await _fetch_info_and_dl(resolved, fmt)
-        _lib_save(info, source="play")            # song library me save
-        _log(key_info, "/api/stream", q, media_type=type)
+        _lib_save_bg(info, source="play")
+        _log_bg(key_info, "/api/stream", q, media_type=type)
 
         return {
             "ok":         True,
@@ -785,8 +846,8 @@ async def ytdl_endpoint(
     key_info = require_valid_key(request)
     try:
         info, result = await _fetch_info_and_dl(url, format)
-        _lib_save(info, source="play")            # song library me save
-        _log(key_info, "/ytdl", url)
+        _lib_save_bg(info, source="play")
+        _log_bg(key_info, "/ytdl", url)
         return {
             "id":          info.get("id"),
             "title":       info.get("title"),
@@ -1703,3 +1764,55 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False,
                 workers=int(os.getenv("WORKERS", "1")))
+
+
+# ── ⚡ Speed: background writers (response latency se DB lock nikala) ────────
+import asyncio as _aio
+
+
+def _bg(coro):
+    """Fire-and-forget coroutine wrapper — response block nahi hota."""
+    try:
+        loop = _aio.get_running_loop()
+        loop.create_task(coro)
+    except RuntimeError:
+        pass
+
+
+def _lib_save_bg(info, source="play"):
+    _bg(_aio.to_thread(_lib_save, info, source))
+
+
+def _log_bg(key_info, endpoint, q, success=True, media_type=None):
+    _bg(_aio.to_thread(_log, key_info, endpoint, q, success=success,
+                       media_type=media_type))
+
+
+# ── ⚡ PREWARM daemon — top songs ke stream URLs hamesha cache me ready ──────
+async def _prewarm_loop():
+    """Har 6 min: library ke top-10 songs ka audio stream URL pre-resolve."""
+    await asyncio.sleep(20)
+    while True:
+        try:
+            vids = await _aio.to_thread(db.library_top, 10)
+            for row in (vids or []):
+                vid = (row[0] if not isinstance(row, dict) else
+                       row.get("video_id") or row.get("id") or "")
+                vid = str(vid).strip()[:11]
+                if not vid or len(vid) != 11:
+                    continue
+                try:
+                    await _fetch_info_and_dl(
+                        f"https://www.youtube.com/watch?v={vid}", "bestaudio/best")
+                except Exception:
+                    pass
+                await asyncio.sleep(2)   # gentle — extraction burst nahi
+        except Exception:
+            pass
+        await asyncio.sleep(360)
+
+
+@app.on_event("startup")
+async def _prewarm_start():
+    asyncio.create_task(_prewarm_loop())
+
