@@ -1794,7 +1794,7 @@ async def _prewarm_loop():
     await asyncio.sleep(20)
     while True:
         try:
-            vids = await _aio.to_thread(db.library_top, 10)
+            vids = await _aio.to_thread(db.library_top, 5)
             for row in (vids or []):
                 vid = (row[0] if not isinstance(row, dict) else
                        row.get("video_id") or row.get("id") or "")
@@ -1806,7 +1806,7 @@ async def _prewarm_loop():
                         f"https://www.youtube.com/watch?v={vid}", "bestaudio/best")
                 except Exception:
                     pass
-                await asyncio.sleep(2)   # gentle — extraction burst nahi
+                await asyncio.sleep(5)   # gentle — extraction burst nahi
         except Exception:
             pass
         await asyncio.sleep(360)
@@ -1814,7 +1814,7 @@ async def _prewarm_loop():
 
 @app.on_event("startup")
 async def _prewarm_start():
-    asyncio.create_task(_prewarm_loop())
+    pass  # prewarm disabled - yt-dlp event loop block karta tha (Buffy fix)
 
 
 # ---------------------------------------------------------------------------
@@ -1883,3 +1883,58 @@ async def redeem_endpoint(body: _RedeemBody):
         return res
     return {"ok": True, "plan": res["plan"], "api_key": res["key"],
             "message": f"{res['plan'].upper()} plan activated!"}
+
+
+# ---------------------------------------------------------------------------
+# SITE HEALTH CARD (v3.1) — real uptime + song count + users (30s cache)
+# ---------------------------------------------------------------------------
+_START_TS = time.time()
+_SITE_STATUS_CACHE = {"t": 0.0, "data": None}
+
+
+def _uptime_human(sec: float) -> str:
+    m = int(sec // 60)
+    d, m = divmod(m, 1440)
+    h, m = divmod(m, 60)
+    if d:
+        return f"{d}d {h}h"
+    if h:
+        return f"{h}h {m}m"
+    return f"{m}m"
+
+
+@app.get("/site-status", tags=["Info"], summary="Website health card (uptime, songs, users)")
+async def site_status():
+    now = time.time()
+    if _SITE_STATUS_CACHE["data"] and now - _SITE_STATUS_CACHE["t"] < 30:
+        return _SITE_STATUS_CACHE["data"]
+    data = {"status": "live", "version": "3.1"}
+    try:
+        st = await _aio.to_thread(db.library_stats)
+        data["songs"] = int(st.get("total_songs", 0) or 0)
+        data["plays"] = int(st.get("total_plays", 0) or 0)
+    except Exception:
+        data["songs"] = 0
+        data["plays"] = 0
+    try:
+        adm = await _aio.to_thread(db.get_admin_stats)
+        data["users"] = int(adm.get("total_users", 0) or 0)
+        data["active_keys"] = int(adm.get("active_keys", 0) or 0)
+        data["total_requests"] = int(adm.get("total_requests", 0) or 0)
+        data["today_requests"] = int(adm.get("today_requests", 0) or 0)
+    except Exception:
+        data["users"] = 0
+        data["active_keys"] = 0
+        data["total_requests"] = 0
+        data["today_requests"] = 0
+    data["uptime_seconds"] = int(now - _START_TS)
+    data["uptime_human"] = _uptime_human(now - _START_TS)
+    try:
+        data["tunnel_url"] = open(
+            os.path.join(os.path.dirname(__file__), "public_url.txt"),
+            encoding="utf-8").read().strip()
+    except Exception:
+        data["tunnel_url"] = ""
+    _SITE_STATUS_CACHE["t"] = now
+    _SITE_STATUS_CACHE["data"] = data
+    return data

@@ -23,6 +23,30 @@ body{
 a{color:var(--acc2);text-decoration:none}
 .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
 
+/* ---------- PAGE LOADER ---------- */
+#pageLoader{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:26px;
+  transition:opacity .55s ease, visibility .55s}
+#pageLoader.hide{opacity:0;visibility:hidden}
+.pl-cube{width:74px;height:74px;transform-style:preserve-3d;animation:cube 2.4s infinite linear}
+.pl-cube span{position:absolute;width:74px;height:74px;border:2px solid rgba(124,92,255,.85);
+  background:linear-gradient(135deg,rgba(124,92,255,.10),rgba(0,224,198,.06));
+  box-shadow:0 0 22px rgba(124,92,255,.35) inset}
+.pl-cube span:nth-child(1){transform:translateZ(37px)}
+.pl-cube span:nth-child(2){transform:rotateY(90deg) translateZ(37px);border-color:rgba(0,224,198,.8)}
+.pl-cube span:nth-child(3){transform:rotateX(90deg) translateZ(37px)}
+.pl-cube span:nth-child(4){transform:rotateY(180deg) translateZ(37px)}
+@keyframes cube{0%{transform:rotateX(-22deg) rotateY(0)}100%{transform:rotateX(-22deg) rotateY(360deg)}}
+.pl-txt{font-size:.8rem;letter-spacing:3px;color:var(--mut);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+.btn.loading{pointer-events:none;opacity:.75}
+.btn.loading::after{content:"";width:15px;height:15px;border:2px solid rgba(255,255,255,.35);
+  border-top-color:#fff;border-radius:50%;margin-left:8px;animation:spin .7s linear infinite;display:inline-block}
+.btn-g.loading::after{border-top-color:var(--acc2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pulse-dot{animation:pdot 1.8s infinite}
+@keyframes pdot{0%,100%{box-shadow:0 0 0 0 rgba(0,224,198,.55)}55%{box-shadow:0 0 0 9px rgba(0,224,198,0)}}
+
 /* ---------- NAV ---------- */
 nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
   background:rgba(4,5,14,.7);border-bottom:1px solid var(--line)}
@@ -159,6 +183,8 @@ footer b{color:var(--txt)}
 </style>
 </head>
 <body>
+<div id="pageLoader"><div class="pl-cube"><span></span><span></span><span></span><span></span></div>
+<div class="pl-txt">KEYARA·API LOADING</div></div>
 
 <nav><div class="wrap">
   <div class="logo"><span class="dot"></span><span class="k">KEYARA</span>API</div>
@@ -195,6 +221,20 @@ footer b{color:var(--txt)}
   </div>
 </div></header>
 
+<div class="wrap" id="healthCard" style="margin:26px 0 -20px">
+  <div class="panel" style="padding:20px 24px;display:flex;gap:22px;align-items:center;flex-wrap:wrap;justify-content:center">
+    <span style="display:flex;align-items:center;gap:9px;font-size:.85rem">
+      <span id="hDot" style="width:10px;height:10px;border-radius:50%;background:#555;display:inline-block"></span>
+      <b id="hState">connecting…</b></span>
+    <span style="width:1px;height:26px;background:var(--line)"></span>
+    <span style="font-size:.82rem;color:var(--mut)">⏱ UPTIME <b id="hUp" style="color:var(--txt)">—</b></span>
+    <span style="font-size:.82rem;color:var(--mut)">🎵 SONGS <b id="hSongs" style="color:var(--acc2)">—</b></span>
+    <span style="font-size:.82rem;color:var(--mut)">▶️ PLAYS <b id="hPlays" style="color:var(--acc2)">—</b></span>
+    <span style="font-size:.82rem;color:var(--mut)">👥 USERS <b id="hUsers" style="color:var(--txt)">—</b></span>
+    <span style="font-size:.82rem;color:var(--mut)">🔑 KEYS <b id="hKeys" style="color:var(--txt)">—</b></span>
+    <span style="font-size:.82rem;color:var(--mut)">⚡ TODAY <b id="hReq" style="color:var(--txt)">—</b></span>
+  </div>
+</div>
 <div class="wrap stats">
   <div class="stat"><div class="n">~20ms</div><div class="l">CACHED STREAM</div></div>
   <div class="stat"><div class="n">2,327</div><div class="l">LIBRARY SONGS</div></div>
@@ -397,6 +437,9 @@ async function tryIt(){
 }
 
 /* --- boot --- */
+window.addEventListener("load", ()=>setTimeout(()=>document.getElementById("pageLoader").classList.add("hide"), 420));
+setTimeout(()=>document.getElementById("pageLoader").classList.add("hide"), 4500); // safety
+
 (async function(){
   renderAuth();
   // deep-link sign-in: #key=web-uid-token
@@ -410,6 +453,39 @@ async function tryIt(){
       $("apiDot").style.boxShadow="0 0 10px var(--acc2)"; }
   }catch(e){ $("apiState").textContent="API offline"; $("apiDot").style.background="#ff5470"; }
 })();
+
+
+/* live health card + tunnel sync */
+async function loadHealth(){
+  try{
+    const c = new AbortController(); setTimeout(()=>c.abort(), 9000);
+    const r = await fetch(`${API}/site-status`, {signal:c.signal});
+    const d = await r.json();
+    const dot=$("hDot"), st=$("hState");
+    dot.style.background="var(--acc2)"; dot.classList.add("pulse-dot");
+    st.textContent="API LIVE"; st.style.color="var(--acc2)";
+    $("hUp").textContent = d.uptime_human || "—";
+    $("hSongs").textContent = (d.songs||0).toLocaleString("en-IN");
+    $("hPlays").textContent = (d.plays||0).toLocaleString("en-IN");
+    $("hUsers").textContent = (d.users||0).toLocaleString("en-IN");
+    $("hKeys").textContent = (d.active_keys||0).toLocaleString("en-IN");
+    $("hReq").textContent = (d.today_requests||0).toLocaleString("en-IN");
+    $("apiState").textContent = "API LIVE";
+    $("apiDot").style.background = "var(--acc2)";
+    if(d.tunnel_url && d.tunnel_url !== API){
+      window.API_NEW = d.tunnel_url;  // scripts jo API const use karte hain unke liye hint
+      console.log("tunnel moved:", d.tunnel_url);
+    }
+  }catch(e){
+    const dot=$("hDot"), st=$("hState");
+    dot.style.background="#ff5470"; dot.classList.remove("pulse-dot");
+    st.textContent="API OFFLINE"; st.style.color="#ff5470";
+    $("apiState").textContent="API offline";
+    $("apiDot").style.background="#ff5470";
+  }
+}
+loadHealth();
+setInterval(loadHealth, 60000);
 
 /* 3D tilt (mouse) */
 const kc=$("kc");
