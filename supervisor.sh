@@ -12,3 +12,8 @@ if ! pgrep -f 'venv/bin/python tgbot.py' > /dev/null; then
   setsid nohup "$DIR/venv/bin/python" tgbot.py >> "$DIR/keybot.log" 2>&1 < /dev/null &
   echo "$(date '+%F %T') tgbot restarted" >> "$DIR/supervisor.log"
 fi
+
+if ! pgrep -f 'venv/bin/python autoagent.py' > /dev/null; then
+  setsid nohup "$DIR/venv/bin/python" autoagent.py >> "$DIR/agent.log" 2>&1 < /dev/null &
+  echo "$(date '+%F %T') autoagent restarted" >> "$DIR/supervisor.log"
+fi
