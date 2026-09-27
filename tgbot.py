@@ -133,9 +133,9 @@ def back_kb() -> InlineKeyboardMarkup:
 
 def plans_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("⚡ Buy Basic  — ₹99/mo",  callback_data="buy_basic")],
-        [InlineKeyboardButton("🚀 Buy Pro    — ₹299/mo", callback_data="buy_pro")],
-        [InlineKeyboardButton("👑 Buy Ultra  — ₹699/mo", callback_data="buy_ultra")],
+        [InlineKeyboardButton("⚡ Starter — ₹99 · 1k/day",  callback_data="buy_basic")],
+        [InlineKeyboardButton("🚀 Pro — ₹199 · 3k/day", callback_data="buy_pro")],
+        [InlineKeyboardButton("👑 Ultra — ₹490 · 9k/day", callback_data="buy_ultra")],
         [InlineKeyboardButton("🔙 Main Menu",            callback_data="back_main")],
     ])
 
@@ -369,22 +369,37 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     lim      = "Unlimited" if rpd == -1 else f"{rpd:,}"
     api_url  = APP_URL or API_BASE_URL
 
+    _wb = "━━━━━━━━━━━━━━━━━━━━"
     msg = (
-        f"👋 *Welcome to {BOT_NAME}!*\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"🔑 *API Key:*\n"
+        f"⚡ *Welcome to {BOT_NAME}* — Blazing-Fast YouTube API\n\n"
+        f"{_wb}\n"
+        f"🔑 *Your API Key:*\n"
         f"`{key_row['key']}`\n\n"
-        f"🌐 *API Endpoint:*\n"
-        f"`{api_url}`\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"📦 Plan: *{plan.upper()}*  •  📊 {lim} req/day\n"
-        f"⏳ Expires: {days} days\n\n"
-        f"📁 /getfile — youtube.py download\n"
-        f"📊 /usage — apni usage dekho"
+        f"🌐 *Endpoint:* `{api_url}`\n"
+        f"📦 Plan: *{plan.upper()}* • 📊 {lim} req/day\n"
+        f"⏳ Expires: {days} days\n"
+        f"{_wb}\n\n"
+        f"🚀 *Quick Start:*\n"
+        f"1️⃣ /getfile — drop-in youtube.py lo\n"
+        f"2️⃣ Bot me `HELLAPI_URL` + `HELLAPI_KEY` set karo\n"
+        f"3️⃣ Done — 20ms cached streams! ⚡\n\n"
+        f"🌍 Website: vip-saksham.github.io/api\n"
+        f"📊 /usage — live usage stats"
     )
-    await update.message.reply_text(
-        msg, parse_mode=ParseMode.MARKDOWN, reply_markup=main_menu_kb()
-    )
+    _photo = os.getenv("START_IMG", "")
+    _sent = False
+    if _photo:
+        try:
+            await update.message.reply_photo(
+                photo=_photo, caption=msg,
+                parse_mode=ParseMode.MARKDOWN, reply_markup=main_menu_kb())
+            _sent = True
+        except Exception:
+            _sent = False
+    if not _sent:
+        await update.message.reply_text(
+            msg, parse_mode=ParseMode.MARKDOWN, reply_markup=main_menu_kb()
+        )
 
     # ── Logger: kaun start kiya + nayi key bani? ──
     _l = [f"{'🆕 <b>NAYA USER</b>' if is_new else '👋 <b>User</b>'} ne bot start kiya",

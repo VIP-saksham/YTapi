@@ -36,35 +36,36 @@ KEY_VALIDITY_DAYS = 30          # 30-day keys for paid plans, 28 for free
 PLANS = {
     "free": {
         "name":     "Free",
-        "rpd":      500,
+        "rpd":      50,
         "rpm":      5,
         "price":    "Free",
         "validity": 28,     # days
-        "features": ["500 requests/day", "5 req/min", "Audio only"],
+        "features": ["50 requests/day (trial)", "5 req/min", "Audio + Video"],
     },
     "basic": {
-        "name":     "Basic",
-        "rpd":      500,
+        "name":     "Starter",
+        "rpd":      1000,
         "rpm":      20,
-        "price":    "₹99/month",
+        "price":    "₹99",
         "validity": 30,
-        "features": ["500 requests/day", "20 req/min", "Audio + Video"],
+        "features": ["1,000 requests/day", "20 req/min", "Audio + Video"],
     },
     "pro": {
         "name":     "Pro",
-        "rpd":      5000,
+        "rpd":      3000,
         "rpm":      60,
-        "price":    "₹299/month",
+        "price":    "₹199",
         "validity": 30,
-        "features": ["5000 requests/day", "60 req/min", "Audio + Video", "Priority support"],
+        "features": ["3,000 requests/day", "60 req/min", "Audio + Video",
+                     "OAuth visitor rotation", "Priority support"],
     },
     "ultra": {
         "name":     "Ultra",
-        "rpd":      -1,
+        "rpd":      9000,
         "rpm":      200,
-        "price":    "₹699/month",
+        "price":    "₹490",
         "validity": 30,
-        "features": ["Unlimited requests/day", "200 req/min", "Audio + Video",
+        "features": ["9,000 requests/day", "200 req/min", "Audio + Video",
                      "Priority support", "Dedicated assistance"],
     },
 }
@@ -312,7 +313,7 @@ def count_users() -> int:
 
 def _gen_key() -> str:
     chars = string.ascii_letters + string.digits
-    return "HellAPI" + "".join(secrets.choice(chars) for _ in range(32))
+    return "Keyara" + "".join(secrets.choice(chars) for _ in range(32))
 
 
 def _validity_days(plan: str) -> int:
