@@ -383,7 +383,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"1️⃣ /getfile — drop-in youtube.py lo\n"
         f"2️⃣ Bot me `HELLAPI_URL` + `HELLAPI_KEY` set karo\n"
         f"3️⃣ Done — 20ms cached streams! ⚡\n\n"
-        f"🌍 Website: vip-saksham.github.io/api\n"
+        f"🌍 Website: keyaraapi.pages.dev\n"
         f"📊 /usage — live usage stats"
     )
     _photo = os.getenv("START_IMG", "")
