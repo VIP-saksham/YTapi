@@ -1,0 +1,18 @@
+[Unit]
+Description=SHUKLAMUSIC — Telegram Music Bot (auto-restart on IP block)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/hellapi
+Environment=PATH=/root/.deno/bin:/usr/local/bin:/usr/bin:/bin
+Environment=XDG_CONFIG_HOME=/root/.config
+ExecStart=/root/hellapi/venv/bin/python tgbot.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/root/hellapi/bot_service.log
+StandardError=append:/root/hellapi/bot_service.log
+
+[Install]
+WantedBy=multi-user.target

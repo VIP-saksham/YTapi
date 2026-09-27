@@ -1,0 +1,19 @@
+[Unit]
+Description=HellAPI — YouTube Stream API (auto-update daemon included)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/hellapi
+# deno + chromium PATH me — yt-dlp JS challenges solve karne ke liye
+Environment=PATH=/root/.deno/bin:/usr/local/bin:/usr/bin:/bin
+Environment=XDG_CONFIG_HOME=/root/.config
+ExecStart=/root/hellapi/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+StandardOutput=append:/root/hellapi/service.log
+StandardError=append:/root/hellapi/service.log
+
+[Install]
+WantedBy=multi-user.target
