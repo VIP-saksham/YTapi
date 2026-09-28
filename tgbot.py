@@ -205,11 +205,36 @@ async def safe_send(bot, chat_id: int, text: str, **kw):
 
 
 async def safe_edit(query, text: str, **kw):
+    # Buffy fix: /start menu PHOTO hai -> text edit 400 deta tha.
+    # Media message -> caption edit; caption limit cross -> delete+resend.
+    msg = query.message
+    is_media = bool(msg and (getattr(msg, "photo", None) or getattr(msg, "animation", None)))
+    if is_media:
+        try:
+            await query.edit_message_caption(caption=text, **kw)
+            return
+        except BadRequest as e:
+            if "not modified" not in str(e).lower():
+                logger.warning(f"safe_edit caption: {e}")
+        except Exception as e:
+            logger.warning(f"safe_edit caption: {e}")
     try:
         await query.edit_message_text(text, **kw)
     except BadRequest as e:
-        if "not modified" not in str(e).lower():
-            logger.warning(f"safe_edit: {e}")
+        if "not modified" in str(e).lower():
+            return
+        logger.warning(f"safe_edit text fail ({e}) -> delete+resend")
+        try:
+            kb = kw.get("reply_markup")
+            chat_id = msg.chat_id if msg else query.from_user.id
+            if msg:
+                try:
+                    await msg.delete()
+                except Exception:
+                    pass
+            await query.get_bot().send_message(chat_id, text, **kw)
+        except Exception as e2:
+            logger.warning(f"safe_edit resend: {e2}")
     except Exception as e:
         logger.warning(f"safe_edit: {e}")
 
@@ -878,7 +903,11 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat and update.effective_chat.type != ChatType.PRIVATE:
         return
     q       = update.callback_query
-    await q.answer()
+    logger.info(f"CB-DEBUG entered: data={q.data!r} from={q.from_user.id}")  # CB-DEBUG
+    try:
+        await q.answer()
+    except Exception as _qe:
+        logger.warning(f"CB-DEBUG q.answer fail: {_qe}")  # CB-DEBUG
     data    = q.data or ""
     user    = q.from_user
     uid     = user.id

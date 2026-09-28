@@ -130,6 +130,8 @@ from database import (
 
 load_dotenv()
 
+import saavn as _saavn   # 🔁 JioSaavn fallback tier (YouTube-fail → saavn serve)
+
 logger   = logging.getLogger(__name__)
 APP_NAME = os.getenv("APP_NAME", "HellAPI")
 APP_URL  = os.getenv("APP_URL", "")           # e.g. https://hellapi.onrender.com
@@ -354,6 +356,12 @@ def require_admin(request: Request):
 def _map_error(exc: Exception) -> HTTPException:
     if isinstance(exc, HTTPException):
         return exc
+    # 🔁 SAAVN CIRCUIT: har YouTube-side failure note karo — threshold cross
+    # hua to API khud JioSaavn pe shift ho jayega (agli requests saavn se).
+    try:
+        _saavn.note_youtube_failure()
+    except Exception:
+        pass
     if isinstance(exc, IPBlockedError):
         msg = str(exc)
         # Circuit-breaker block vs normal YouTube block — retry time dono me alag.
@@ -806,12 +814,46 @@ async def api_stream(
                 }
         except Exception:
             pass
+    # 🔁 SAAVN MODE: circuit open hai (YouTube baar-baar fail) to seedha
+    # JioSaavn se serve karo — YouTube try hi nahi karte (latency bachao).
+    if type == "audio" and _saavn.youtube_fallback_active():
+        try:
+            _qtitle = q
+            if vid_q and len(vid_q) == 11:
+                _meta = _stored_meta(vid_q)
+                _qtitle = _meta.get("title") or vid_q
+            _sp = await asyncio.get_event_loop().run_in_executor(
+                None, lambda: _saavn.savn_resolve(_qtitle))
+            if _sp:
+                _base2 = (os.getenv("APP_URL", "") or
+                          str(request.base_url).rstrip("/")).rstrip("/")
+                _surl = f"{_base2}/saavn/{_sp['vid']}?api_key={key_info['key']}"
+                logger.info(f"🔁 saavn-serve (mode): {_sp['title']} ← {q[:60]}")
+                _log(key_info, "/api/stream", q, media_type="audio")
+                return {
+                    "ok": True, "type": "audio", "plan": key_info["plan"],
+                    "url": q,
+                    "title": _sp["title"],
+                    "duration": _sp["duration"],
+                    "thumbnail": _sp["image"] or "",
+                    "uploader": _sp["artist"] or "JioSaavn",
+                    "stream_url": _surl, "direct_url": _surl,
+                    "format_id": "saavn", "ext": "mp4",
+                    "is_live": False, "via": "jiosaavn",
+                }
+        except Exception as _se:
+            logger.warning(f"saavn-mode serve fail: {str(_se)[:90]} — youtube try karenge")
     try:
         fmt      = "bestaudio/best" if type == "audio" else "bestvideo+bestaudio/best"
         resolved = await _resolve_url(q)
         info, result = await _fetch_info_and_dl(resolved, fmt)
         _lib_save_bg(info, source="play")
         _log_bg(key_info, "/api/stream", q, media_type=type)
+        # ✅ YouTube chal gaya — fail-counter reset
+        try:
+            _saavn.note_youtube_success()
+        except Exception:
+            pass
 
         return {
             "ok":         True,
@@ -830,6 +872,38 @@ async def api_stream(
         }
     except Exception as e:
         _log(key_info, "/api/stream", q, success=False)
+        # 🔁 SAAVN FALLBACK: YouTube fail hua — audio request ke liye turant
+        # JioSaavn se try karo (bar-bar fail = circuit khud ON kar dega).
+        if type == "audio":
+            try:
+                _saavn.note_youtube_failure()
+            except Exception:
+                pass
+            try:
+                _qtitle2 = q
+                if vid_q and len(vid_q) == 11:
+                    _meta2 = _stored_meta(vid_q)
+                    _qtitle2 = _meta2.get("title") or vid_q
+                _sp2 = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: _saavn.savn_resolve(_qtitle2))
+                if _sp2:
+                    _base3 = (os.getenv("APP_URL", "") or
+                              str(request.base_url).rstrip("/")).rstrip("/")
+                    _surl2 = f"{_base3}/saavn/{_sp2['vid']}?api_key={key_info['key']}"
+                    logger.info(f"🔁 saavn-fallback: {_sp2['title']} ← {q[:60]}")
+                    return {
+                        "ok": True, "type": "audio", "plan": key_info["plan"],
+                        "url": q,
+                        "title": _sp2["title"],
+                        "duration": _sp2["duration"],
+                        "thumbnail": _sp2["image"] or "",
+                        "uploader": _sp2["artist"] or "JioSaavn",
+                        "stream_url": _surl2, "direct_url": _surl2,
+                        "format_id": "saavn", "ext": "mp4",
+                        "is_live": False, "via": "jiosaavn",
+                    }
+            except Exception as _se2:
+                logger.warning(f"saavn-fallback fail: {str(_se2)[:90]}")
         raise _map_error(e)
 
 
@@ -1153,6 +1227,56 @@ async def api_live(request: Request, url: str = Query(...)):
 # vid → "video"|"audio" — relay expire hone ke BAAD bhi pata ho ki request
 # video thi ya audio (relay-404 fallback galat kind serve na de)
 _RELAY_KIND_HINT: dict = {}
+
+
+@app.get("/saavn/{vid}", tags=["Stream"], summary="JioSaavn CDN stream (range-supported)")
+async def saavn_stream(request: Request, vid: str, rng: Optional[str] = None):
+    """JioSaavn song stream — bot ke URL-stream fast-path ke liye HellAPI ke
+    apne endpoints (/relay/, /file/) jaisa hi. Range-support full (seek OK)."""
+    require_valid_key(request)
+    media = await asyncio.get_event_loop().run_in_executor(
+        None, lambda: _saavn.savn_media_url(vid))
+    if not media:
+        raise HTTPException(404, {"error": "saavn_not_found",
+                                  "message": "Song CDN URL resolve nahi hua."})
+    _hdrs = {"User-Agent": _saavn._UA}
+    if not rng:
+        rng = request.headers.get("range")
+    if rng:
+        _hdrs["Range"] = rng
+    try:
+        cm = _http_client("").stream("GET", media, headers=_hdrs)
+        resp = await cm.__aenter__()
+        if resp.status_code >= 400:
+            await cm.__aexit__(None, None, None)
+            _saavn._media_cache.pop(vid, None)   # dead url — refetch next time
+            raise HTTPException(502, {"error": "saavn_upstream",
+                                      "message": f"CDN status {resp.status_code}"})
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(502, {"error": "saavn_fail", "message": str(e)[:120]})
+    out = {
+        "Content-Disposition": f'inline; filename="{vid}.mp4"',
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "no-store",
+    }
+    for h in ("content-length", "content-range"):
+        if h in resp.headers:
+            out[h] = resp.headers[h]
+
+    async def _iter_s():
+        try:
+            async for chunk in resp.aiter_bytes(256 * 1024):
+                yield chunk
+        finally:
+            try:
+                await cm.__aexit__(None, None, None)
+            except Exception:
+                pass
+
+    return StreamingResponse(_iter_s(), status_code=resp.status_code,
+                             headers=out, media_type="audio/mp4")
 
 
 @app.get("/relay/{video_id}", tags=["Stream"], summary="Live relay stream (googlevideo pipe)")

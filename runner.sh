@@ -17,7 +17,7 @@ echo "[runner] started $$ at $(date)" >> logs/runner.log
 
 restart_all() {
   echo "[runner] restarting API+BOT at $(date) — reason: $1" >> logs/runner.log
-  pkill -9 -f "uvicorn main:app" 2>/dev/null
+  pkill -9 -f "uvicorn main:app.*--port 8181" 2>/dev/null
   pkill -9 -f "python tgbot.py"  2>/dev/null
   sleep 2
   rm -f .restart_flag
@@ -30,9 +30,9 @@ while true; do
   fi
 
   # API zinda hai?
-  if ! pgrep -f "uvicorn main:app" >/dev/null 2>&1; then
+  if ! pgrep -f "uvicorn main:app.*--port 8181" >/dev/null 2>&1; then
     restart_all "api dead"
-    nohup ./venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000 \
+    nohup ./venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8181 \
       >> logs/api.log 2>&1 9>&- &          # 9>&-: lock fd child ko inherit na ho
     echo "[runner] API started pid $!" >> logs/runner.log
   fi

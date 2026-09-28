@@ -71,7 +71,7 @@ def snapshot() -> dict:
     s = {"ts": time.strftime("%F %T"), "api": "up"}
     try:
         t0 = time.time()
-        r = requests.get("http://localhost:8000/info",
+        r = requests.get("http://localhost:8181/info",
                          params={"url": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
                                  "api_key": os.getenv("HELLAPI_KEY", "")}, timeout=15)
         s["info_ms"] = round((time.time()-t0)*1000)

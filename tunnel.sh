@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # KeyaraAPI public tunnel (Cloudflare quick tunnel)
-# - Starts cloudflared -> http://localhost:8000
+# - Starts cloudflared -> http://localhost:8181
 # - Saves public URL to public_url.txt
 # - URL change hone pe tgbot restart (naya URL pick karne)
 # - Cron watchdog har minute ye script chalata hai (agar tunnel dead hai)
@@ -12,7 +12,7 @@ if pgrep -f '[c]loudflared tunnel' >/dev/null 2>&1; then
 fi
 
 echo "[$(date '+%F %T')] starting cloudflared..." >> "$LOG"
-nohup cloudflared tunnel --url http://localhost:8000 --no-autoupdate \
+nohup cloudflared tunnel --url http://localhost:8181 --no-autoupdate \
   > /tmp/cf_tunnel_out.log 2>&1 &
 
 # URL nikalna (trycloudflare.com try-tunnel line se)
