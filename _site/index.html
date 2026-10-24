@@ -181,8 +181,26 @@ footer b{color:var(--txt)}
 .float{animation:float 7s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 </style>
+
+<style id="ui-polish">
+/* SITE_ALL_V1 UI polish */
+.hero h1{font-size:clamp(2.1rem,5vw,3.5rem);line-height:1.08;letter-spacing:-.5px}
+.hero h1 .grad{background:linear-gradient(120deg,#a86bff,#5ec8ff 55%,#7cffb2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.panel,.card,.dpane{border:1px solid rgba(168,107,255,.18);border-radius:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));
+  box-shadow:0 10px 40px -22px rgba(168,107,255,.5)}
+.btn-p{background:linear-gradient(120deg,#a86bff,#5ec8ff);border:none;color:#0b0b12;font-weight:800;
+  border-radius:12px;transition:transform .15s ease,box-shadow .15s ease}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 12px 30px -10px rgba(168,107,255,.7)}
+.input{border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25)}
+.input:focus{border-color:#a86bff;box-shadow:0 0 0 3px rgba(168,107,255,.2)}
+.tag{background:rgba(168,107,255,.15);color:#c9a6ff;border:1px solid rgba(168,107,255,.3)}
+.badge{backdrop-filter:blur(6px)}
+footer{border-top:1px solid rgba(255,255,255,.08)}
+#trySpeed b{font-size:1.05rem}
+</style>
 </head>
-<body>
+<body data-site="SITE_ALL_V1">
 <div id="pageLoader"><div class="pl-cube"><span></span><span></span><span></span><span></span></div>
 <div class="pl-txt">KEYARA·API LOADING</div></div>
 
@@ -190,7 +208,7 @@ footer b{color:var(--txt)}
   <div class="logo"><span class="dot"></span><span class="k">KEYARA</span>API</div>
   <div class="navlinks">
     <a href="#plans">Plans</a><a href="#start">Sign-In</a><a href="#redeem">Redeem</a>
-    <a href="#docs">Docs</a><a href="https://t.me/KeyaraApiBot" target="_blank">Bot</a>
+    <a href="#docs">Docs</a><a href="https://t.me/YoutubeMusicApiBot" target="_blank">Bot</a>
   </div>
   <a class="btn btn-p" style="padding:9px 18px;font-size:.85rem" href="#start">Get Key</a>
 </div></nav>
@@ -199,11 +217,11 @@ footer b{color:var(--txt)}
   <div>
     <span class="badge"><span class="dot" id="apiDot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block"></span>
       <b id="apiState">checking API…</b>&nbsp;· v3 engine</span>
-    <h1>Music API jo<br><span class="grad">sochne se bhi tez</span> chale ⚡</h1>
-    <p class="sub">KeyaraAPI — YouTube streaming engine for Telegram music bots. Cached streams <b style="color:var(--txt)">~20ms</b>, 2300+ song library, ek key — <b style="color:var(--txt)">bot + website dono</b> me kaam kare.</p>
+    <h1>Music API that runs<br><span class="grad">faster than thought</span> ⚡</h1>
+    <p class="sub">KeyaraAPI — YouTube streaming engine for Telegram music bots. Cached streams <b style="color:var(--txt)">~20ms</b>, 2300+ song library, one key — <b style="color:var(--txt)">works on both bot + website</b>.</p>
     <div class="cta-row">
       <button class="btn btn-p" onclick="freeKey()">🎁 Get Free Key</button>
-      <a class="btn btn-t" href="https://t.me/KeyaraApiBot" target="_blank">💬 Open Bot</a>
+      <a class="btn btn-t" href="https://t.me/YoutubeMusicApiBot" target="_blank">💬 Open Bot</a>
       <a class="btn btn-g" href="#docs">📖 Docs</a>
     </div>
   </div>
@@ -245,7 +263,7 @@ footer b{color:var(--txt)}
 <!-- PLANS -->
 <section id="plans"><div class="wrap">
   <div class="sec-head"><span class="tag">PRICING</span><h2>Simple plans, zero drama</h2>
-  <p>Buy karne ke liye Telegram pe msg karo — owner code dega, Redeem karo, plan active. 🔓</p></div>
+  <p>Message us on Telegram to buy — the owner sends a code, you Redeem it, plan activates. 🔓</p></div>
   <div class="plans">
     <div class="plan"><h3>🎁 Free</h3><div class="price">₹0</div>
       <ul><li>50 requests/day</li><li>5 req/min</li><li>Audio + Video</li><li>Bot + Website</li></ul>
@@ -265,21 +283,28 @@ footer b{color:var(--txt)}
 <!-- SIGN-IN + REDEEM -->
 <section id="start"><div class="wrap">
   <div class="sec-head"><span class="tag">ACCESS</span><h2>Sign-In & Redeem</h2>
-  <p>Bot se sign-in code lo → yahan paste karo. Paid code aaya to Redeem box me daalo. Done. ✅</p></div>
+  <p>Get a sign-in code from the bot → paste it here. Got a paid code? Put it in the Redeem box. Done. ✅</p></div>
   <div class="auth-grid">
     <div class="panel">
       <h3>🔑 Telegram Sign-In</h3>
-      <p class="hint">1) <a class="tg-link" href="https://t.me/KeyaraApiBot?start=web" target="_blank">@KeyaraApiBot</a> kholo
-      → <b>🌐 Website Sign-In</b> button dabao.<br>2) Jo code aaye (<code style="color:var(--acc2)">web-…</code>) wo paste karo.</p>
+      <p class="hint">1) <a class="tg-link" href="https://t.me/YoutubeMusicApiBot?start=web" target="_blank">@YoutubeMusicApiBot</a> open
+      → press the <b>🌐 Website Sign-In</b> button.<br>2) Paste the code you get (<code style="color:var(--acc2)">web-…</code>).</p>
       <input class="input" id="signCode" placeholder="web-123456789-abc123…">
+      <div class="row" style="justify-content:center;margin:10px 0">
+        <script async src="https://telegram.org/js/telegram-widget.js?22"
+          data-telegram-login="YoutubeMusicApiBot" data-size="large"
+          data-userpic="false" data-request-access="write"
+          data-onauth="onTelegramAuth(user)"></script>
+      </div>
+      <p class="hint" style="text-align:center">— or sign in with a code —</p>
       <div class="row"><button class="btn btn-p" onclick="signIn()">Sign In</button>
       <button class="btn btn-g" onclick="freeKey()">🎁 Guest Free Key</button></div>
       <div class="you" id="youBox"></div>
     </div>
     <div class="panel" id="redeem">
       <h3>🎟️ Redeem Code</h3>
-      <p class="hint">Owner se mila <b>KEYARA-XXXXXXXXXX</b> code yahan daalo — plan turant active.
-      Pehle sign-in karna zaroori hai (taaki code tumhare account lage).</p>
+      <p class="hint">Got a <b>KEYARA-XXXXXXXXXX</b> code from the owner? Enter it here — plan activates instantly.
+      You must sign in first (so the code links to your account).</p>
       <input class="input" id="redeemCode" placeholder="KEYARA-XXXXXXXXXX">
       <div class="row"><button class="btn btn-p" onclick="redeem()">Redeem Now</button></div>
       <div class="you" id="rdBox"></div>
@@ -290,7 +315,7 @@ footer b{color:var(--txt)}
 <!-- DOCS -->
 <section id="docs"><div class="wrap">
   <div class="sec-head"><span class="tag">DOCS</span><h2>Developer Docs</h2>
-  <p>Auth: <code style="color:var(--acc2)">x-api-key</code> header ya <code style="color:var(--acc2)">?api_key=</code> param — dono chalega.</p></div>
+  <p>Auth: <code style="color:var(--acc2)">x-api-key</code> header or <code style="color:var(--acc2)">?api_key=</code> param — both work.</p></div>
   <div class="docs">
     <div class="docs-tabs">
       <div class="dtab on" onclick="tab(0,this)">⚡ Quick Start</div>
@@ -299,8 +324,8 @@ footer b{color:var(--txt)}
       <div class="dtab" onclick="tab(3,this)">🧪 Try It</div>
     </div>
     <div class="dpane on">
-<pre><span class="c"># 1) Key lo — bot se ya upar "Get Free Key" se</span>
-<span class="c"># 2) Koi bhi endpoint test karo:</span>
+<pre><span class="c"># 1) Get a key — from the bot, or the "Get Free Key" button above</span>
+<span class="c"># 2) Test any endpoint:</span>
 curl <span class="s">"https://keyaraapi.pages.dev/search?q=kesariya&amp;api_key=YOUR_KEY"</span>
 
 <span class="c"># 3) Stream URL (audio):</span>
@@ -309,9 +334,9 @@ curl <span class="s">"https://keyaraapi.pages.dev/api/stream?url=https://youtu.b
 <span class="k">Response</span>: {"ok": true, "stream_url": "https://…googlevideo.com/videoplayback?…"} <span class="c"># VC me direct play</span></pre>
     </div>
     <div class="dpane">
-      <p style="color:var(--mut);font-size:.88rem;margin-bottom:14px">Key ke saath <b>yt.py</b> download karo (apne bot ke
-      <code>platforms/</code> me drop karo) aur <code>.env</code> me 2 lines daalo — bas, bot chalu. 🚀</p>
-<pre><span class="c"># .env — bot me add karo (KeyaraAPI)</span>
+      <p style="color:var(--mut);font-size:.88rem;margin-bottom:14px">Download <b>yt.py</b> with your key (into your bot's
+      <code>platforms/</code> folder) and add 2 lines to <code>.env</code> — that's it, bot is live. 🚀</p>
+<pre><span class="c"># .env — add to your bot (KeyaraAPI)</span>
 <span class="k">HELLAPI_URL</span>=<span class="s">https://keyaraapi.pages.dev</span>
 <span class="k">HELLAPI_KEY</span>=<span class="s">Keyara…your-key…</span></pre>
       <div class="row">
@@ -336,10 +361,11 @@ curl <span class="s">"https://keyaraapi.pages.dev/api/stream?url=https://youtu.b
       </table>
     </div>
     <div class="dpane">
-      <p style="color:var(--mut);font-size:.88rem;margin-bottom:12px">Apni key daalo aur live chalao 👇</p>
-      <input class="input" id="tryUrl" placeholder="/search?q=kesariya  ya  /api/stream?url=…&type=audio">
+      <p style="color:var(--mut);font-size:.88rem;margin-bottom:12px">Enter a <b>song name</b> (e.g. <code>kesariya</code>) or a raw endpoint — run it live 👇</p>
+      <input class="input" id="tryUrl" placeholder="kesariya   (or: /search?q=…  /api/stream?url=…&type=audio)">
       <div class="row"><button class="btn btn-p" onclick="tryIt()">Run ⚡</button></div>
-<pre id="tryOut" style="margin-top:14px;display:none;max-height:340px;overflow:auto"></pre>
+<div id="trySpeed" style="display:none;margin-top:12px;font-weight:700;font-size:.92rem"></div>
+      <pre id="tryOut" style="margin-top:10px;display:none;max-height:340px;overflow:auto"></pre>
     </div>
   </div>
 </div></section>
@@ -347,8 +373,8 @@ curl <span class="s">"https://keyaraapi.pages.dev/api/stream?url=https://youtu.b
 <footer><div class="wrap">
   <b>KEYARA·API</b> — Speed of Thought ⚡<br><br>
   Made with 💜 by <a href="https://t.me/TrueNakshu">Saksham Swaroop</a> ·
-  <a href="https://t.me/KeyaraApiBot">Bot</a> · <a href="https://t.me/hellupdates1">Channel</a><br><br>
-  <span style="font-size:.75rem;opacity:.7">© 2026 KeyaraAPI · Bot + Website ek hi key, ek hi dil 💜</span>
+  <a href="https://t.me/YoutubeMusicApiBot">Bot</a> · <a href="https://t.me/thehellbots">Support Channel</a> · <a href="https://t.me/sunshine_gc">Support Group</a><br><br>
+  <span style="font-size:.75rem;opacity:.7">© 2026 KeyaraAPI · Bot + Website — one key, one love 💜</span>
 </div></footer>
 
 <div class="toast" id="toast"></div>
@@ -363,10 +389,10 @@ let auth = (()=>{ try{return JSON.parse(localStorage.getItem(LS))||null}catch(e)
 function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),3200)}
 function tab(i,el){document.querySelectorAll(".dtab").forEach((d,k)=>d.classList.toggle("on",k===i));
   document.querySelectorAll(".dpane").forEach((d,k)=>d.classList.toggle("on",k===i))}
-function copyTxt(s){navigator.clipboard.writeText(s).then(()=>toast("Copied ✅")).catch(()=>toast("Copy fail — manually select karo"))}
-function copyKey(){ if(auth&&auth.api_key) copyTxt(auth.api_key); else toast("Pehle key lo — Get Free Key 🔑") }
-function copyEnv(){ if(!auth||!auth.api_key) return toast("Pehle sign-in / free key lo"); copyTxt(`HELLAPI_URL=${API}\nHELLAPI_KEY=${auth.api_key}`) }
-function ytPy(){ if(!auth||!auth.api_key) return (toast("Pehle key lo 🔑"), false);
+function copyTxt(s){navigator.clipboard.writeText(s).then(()=>toast("Copied ✅")).catch(()=>toast("Copy failed — select it manually"))}
+function copyKey(){ if(auth&&auth.api_key) copyTxt(auth.api_key); else toast("Get a key first — Get Free Key 🔑") }
+function copyEnv(){ if(!auth||!auth.api_key) return toast("Sign in first / get a free key"); copyTxt(`HELLAPI_URL=${API}\nHELLAPI_KEY=${auth.api_key}`) }
+function ytPy(){ if(!auth||!auth.api_key) return (toast("Get a key first 🔑"), false);
   window.open(`${API}/youtube.py?api_key=${auth.api_key}`,"_blank"); return false }
 
 function renderAuth(){
@@ -386,54 +412,82 @@ async function freeKey(){
     const r = await fetch(`${API}/site-freekey`); const d = await r.json();
     if(!d.ok) throw 0;
     auth = {...auth, api_key:d.api_key, plan:"free", rpd:d.rpd, guest:true};
-    renderAuth(); toast("Free key ready! 🎁 24/7 use karo");
-  }catch(e){ toast("API se connect nahi hua 😕 — thodi der baad try karo") }
+    renderAuth(); toast("Free key ready! 🎁 Use it 24/7");
+  }catch(e){ toast("Couldn't reach the API 😕 — try again in a bit") }
+}
+
+// OAUTH_TG_V1: Telegram Login Widget callback
+async function onTelegramAuth(user){
+  try{
+    const r = await fetch(`${API}/auth/telegram`,{method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(user)});
+    const d = await r.json();
+    if(!d.ok) return toast("Telegram verify fail: "+(d.error||"try again"));
+    auth = {...auth, api_key:d.api_key, plan:d.plan, guest:false,
+            tg:d.username||("id"+user.id)};
+    renderAuth(); toast("Logged in with Telegram ✅ Welcome!");
+  }catch(e){ toast("The API seems to be down 😕") }
 }
 
 async function signIn(){
   const code = $("signCode").value.trim();
-  if(!code) return toast("Pehle bot se sign-in code lo 💬");
+  if(!code) return toast("Get a sign-in code from the bot first 💬");
   try{
     const r = await fetch(`${API}/site-signin`,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({code})});
     const d = await r.json();
-    if(!d.ok) return toast("Code galat hai — bot se naya lo");
+    if(!d.ok) return toast("Wrong code — get a fresh one from the bot");
     auth = {...auth, api_key:d.api_key, plan:d.plan, guest:false};
     renderAuth(); toast("Sign-in ho gaya ✅ Welcome!");
-  }catch(e){ toast("API down lag raha hai 😕") }
+  }catch(e){ toast("The API seems to be down 😕") }
 }
 
 async function redeem(){
   const code = $("redeemCode").value.trim().toUpperCase();
-  if(!code) return toast("Code daalo pehle 🎟️");
-  if(!auth||!auth.api_key) return toast("Pehle Sign-In karo (paid code account se link hota hai)");
+  if(!code) return toast("Enter the code first 🎟️");
+  if(!auth||!auth.api_key) return toast("Sign in first (a paid code links to your account)");
   const uid = auth.uid || 0;
   try{
     const r = await fetch(`${API}/redeem`,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({code, user_id: uid})});
     const d = await r.json();
-    if(!d.ok) return toast(d.error==="already_used" ? "Code pehle use ho chuka ⚠️" :
+    if(!d.ok) return toast(d.error==="already_used" ? "That code was already used ⚠️" :
                            d.error==="invalid_code" ? "Galat code ❌" :
-                           "Pehle bot se Website Sign-In karo — phir redeem karo");
+                           "Do the Website Sign-In from the bot first, then redeem");
     auth.api_key = d.api_key; auth.plan = d.plan; auth.guest=false;
     renderAuth(); $("rdBox").classList.add("show");
     $("rdBox").innerHTML = `🎉 <b>${(d.plan||"").toUpperCase()} ACTIVATED!</b> Nayi key: <code>${d.api_key}</code>`;
     toast(`🎉 ${d.plan.toUpperCase()} plan active!`);
-  }catch(e){ toast("API down lag raha hai 😕") }
+  }catch(e){ toast("The API seems to be down 😕") }
 }
 
 async function tryIt(){
-  const path = $("tryUrl").value.trim(); if(!path) return toast("Endpoint likho, e.g. /search?q=kesariya");
-  if(!auth||!auth.api_key) return toast("Pehle key lo 🔑");
+  const raw = $("tryUrl").value.trim();
+  if(!raw) return toast("Type a song name or endpoint, e.g. kesariya");
+  if(!auth||!auth.api_key) return toast("Get a key first 🔑");
+  const isEndpoint = raw.startsWith("/") || raw.startsWith("http") || raw.includes("=");
+  const path = isEndpoint ? raw : "/search?q=" + encodeURIComponent(raw) + "&limit=3";
   const url = path.startsWith("http") ? path : `${API}${path.startsWith("/")?path:"/"+path}`;
   const sep = url.includes("?") ? "&" : "?";
-  const out = $("tryOut"); out.style.display="block"; out.textContent = "Running…";
+  const out = $("tryOut"), spd = $("trySpeed");
+  out.style.display="block"; out.textContent = "Running…";
+  spd.style.display="block"; spd.style.color="var(--mut)"; spd.textContent = "⏱ measuring…";
+  const t0 = performance.now();
   try{
     const r = await fetch(`${url}${sep}api_key=${auth.api_key}`);
     const txt = await r.text();
+    const ms = Math.round(performance.now() - t0);
     let pretty = txt; try{ pretty = JSON.stringify(JSON.parse(txt), null, 2) }catch(e){}
-    out.textContent = `HTTP ${r.status}\n\n` + pretty.slice(0, 4000);
-  }catch(e){ out.textContent = "Fetch fail: " + e }
+    const kb = (new Blob([txt]).size/1024).toFixed(1);
+    spd.innerHTML = `⚡ <b>${ms} ms</b> &nbsp;·&nbsp; HTTP ${r.status} &nbsp;·&nbsp; ${kb} KB`;
+    spd.style.color = ms < 500 ? "var(--acc2)" : (ms < 2000 ? "#f5a623" : "#ff5470");
+    out.textContent = pretty.slice(0, 4000);
+  }catch(e){
+    const ms = Math.round(performance.now() - t0);
+    spd.innerHTML = "⚠ failed after <b>" + ms + " ms</b>";
+    spd.style.color = "#ff5470";
+    out.textContent = "Fetch failed: " + e;
+  }
 }
 
 /* --- boot --- */

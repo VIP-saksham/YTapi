@@ -1,3 +1,4 @@
+_TG_STORE_FLIGHT = {}  # PATCH_FASTV1 in-flight dup guard
 import re
 """
 main.py
@@ -31,6 +32,7 @@ from fastapi.responses import JSONResponse, StreamingResponse, FileResponse, Res
 from dotenv import load_dotenv
 
 from ytdlp import (
+    is_direct_dead,
     get_video_info,
     get_available_formats,
     get_direct_download_url,
@@ -507,6 +509,25 @@ def _file_play_url(request: Request, video_id: str, api_key: str) -> str:
     return f"{base}/file/{video_id}?api_key={api_key}"
 
 
+def _title_from_search(vid: str) -> str:
+    """search_cache se vid->title (bot /search se hi vid dhoondta hai)."""
+    if not vid or len(vid) != 11:
+        return ""
+    try:
+        import json as _j
+        with db.get_conn() as conn:
+            rows = conn.execute(
+                "SELECT results FROM search_cache ORDER BY cached_at DESC LIMIT 100"
+            ).fetchall()
+        for r in rows:
+            for item in _j.loads(r["results"] or "[]"):
+                if item.get("id") == vid and item.get("title"):
+                    return str(item["title"])
+    except Exception:
+        pass
+    return ""
+
+
 def _stored_meta(vid: str, fallback_title: str = "") -> dict:
     """Library/video_cache se metadata (title/duration/thumbnail)."""
     lib = db.library_get(vid) or {}
@@ -816,12 +837,12 @@ async def api_stream(
             pass
     # 🔁 SAAVN MODE: circuit open hai (YouTube baar-baar fail) to seedha
     # JioSaavn se serve karo — YouTube try hi nahi karte (latency bachao).
-    if type == "audio" and _saavn.youtube_fallback_active():
+    if type == "audio" and (_saavn.youtube_fallback_active() or is_direct_dead()):
         try:
             _qtitle = q
             if vid_q and len(vid_q) == 11:
                 _meta = _stored_meta(vid_q)
-                _qtitle = _meta.get("title") or vid_q
+                _qtitle = _meta.get("title") or _title_from_search(vid_q) or vid_q
             _sp = await asyncio.get_event_loop().run_in_executor(
                 None, lambda: _saavn.savn_resolve(_qtitle))
             if _sp:
@@ -830,6 +851,29 @@ async def api_stream(
                 _surl = f"{_base2}/saavn/{_sp['vid']}?api_key={key_info['key']}"
                 logger.info(f"🔁 saavn-serve (mode): {_sp['title']} ← {q[:60]}")
                 _log(key_info, "/api/stream", q, media_type="audio")
+                # 🔥 TG-STORE (mode path): saavn serve hua to DB channel me store bhi
+                try:
+                    import tgstore as _tgst
+                    _vid_store = vid_q if (vid_q and len(vid_q) == 11) else _sp["vid"]
+                    async def _sf1(_v=_vid_store, _sp=_sp):
+                        try:
+                            if _TG_STORE_FLIGHT.get(_v):
+                                return
+                            _TG_STORE_FLIGHT[_v] = 1
+                            _cd = await asyncio.get_event_loop().run_in_executor(
+                                None, lambda: _saavn.savn_media_url(_sp["vid"]))
+                            if _cd:
+                                _ok1 = await _tgst.tg_store_file(
+                                    _v, _sp["title"], _cd, "mp4", kind="audio")
+                                if _ok1:
+                                    logger.info(f"📦 tg-store: {_sp['title'][:50]} (mode)")
+                        except Exception as _te1:
+                            logger.warning(f"tg-store skip: {str(_te1)[:70]}")
+                        finally:
+                            _TG_STORE_FLIGHT.pop(_v, None)
+                    asyncio.create_task(_sf1())
+                except Exception as _hook1:
+                    logger.warning(f"tg-store hook err: {str(_hook1)[:70]}")
                 return {
                     "ok": True, "type": "audio", "plan": key_info["plan"],
                     "url": q,
@@ -883,7 +927,7 @@ async def api_stream(
                 _qtitle2 = q
                 if vid_q and len(vid_q) == 11:
                     _meta2 = _stored_meta(vid_q)
-                    _qtitle2 = _meta2.get("title") or vid_q
+                    _qtitle2 = _meta2.get("title") or _title_from_search(vid_q) or vid_q
                 _sp2 = await asyncio.get_event_loop().run_in_executor(
                     None, lambda: _saavn.savn_resolve(_qtitle2))
                 if _sp2:
@@ -891,6 +935,31 @@ async def api_stream(
                               str(request.base_url).rstrip("/")).rstrip("/")
                     _surl2 = f"{_base3}/saavn/{_sp2['vid']}?api_key={key_info['key']}"
                     logger.info(f"🔁 saavn-fallback: {_sp2['title']} ← {q[:60]}")
+                    # 🔥 TG-STORE: is song ko DB channel me bhi daal do (background) —
+                    # ab YT block ho to bhi bot channel-cache se play/store sath khayega.
+                    try:
+                        import tgstore as _tgst
+                        _vid_store = vid_q if (vid_q and len(vid_q) == 11) else _sp2["vid"]
+                        async def _sf2(_v=_vid_store, _sp=_sp2):
+                            try:
+                                if _TG_STORE_FLIGHT.get(_v):
+                                    return
+                                _TG_STORE_FLIGHT[_v] = 1
+
+                                _cd = await asyncio.get_event_loop().run_in_executor(
+                                    None, lambda: _saavn.savn_media_url(_sp["vid"]))
+                                if _cd:
+                                    _ok2 = await _tgst.tg_store_file(
+                                        _v, _sp["title"], _cd, "mp4", kind="audio")
+                                    if _ok2:
+                                        logger.info(f"📦 tg-store: {_sp['title'][:50]} ← saavn CDN")
+                            except Exception as _te2:
+                                logger.warning(f"tg-store skip: {str(_te2)[:70]}")
+                            finally:
+                                _TG_STORE_FLIGHT.pop(_v, None)
+                        asyncio.create_task(_sf2())
+                    except Exception as _hook_e:
+                        logger.warning(f"tg-store hook err: {str(_hook_e)[:70]}")
                     return {
                         "ok": True, "type": "audio", "plan": key_info["plan"],
                         "url": q,
@@ -1994,6 +2063,46 @@ async def site_signin(body: _SigninBody):
         key_row = db.validate_key(key)
     return {"ok": True, "api_key": key_row["key"], "plan": key_row["plan"],
             "expires_at": key_row["expires_at"]}
+
+
+@app.post("/auth/telegram", tags=["Account"],
+          summary="Website: Telegram Login Widget (OAuth) verify + key issue")
+async def auth_telegram(body: dict):
+    """OAUTH_TG_V1: Telegram Login Widget ka HMAC-SHA256 verify karo aur user ko
+    uski existing key do (ya free key mint karo). Forge-proof: secret =
+    SHA256(bot_token) — sirf bot+API jaante hain."""
+    import hashlib as _hl, hmac as _hm, time as _tm
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+    if not token or ":" not in token:
+        return {"ok": False, "error": "bot_token_missing"}
+    data = {k: str(v) for k, v in (body or {}).items()
+            if k != "hash" and v is not None}
+    tg_hash = str((body or {}).get("hash") or "")
+    if not data.get("id") or not tg_hash:
+        return {"ok": False, "error": "missing_fields"}
+    try:
+        auth_ts = int(data.get("auth_date") or 0)
+    except Exception:
+        auth_ts = 0
+    if not auth_ts or abs(_tm.time() - auth_ts) > 86400:
+        return {"ok": False, "error": "auth_expired"}
+    secret = _hl.sha256(token.encode()).digest()
+    dcs = "\n".join(f"{k}={data[k]}" for k in sorted(data))
+    calc = _hm.new(secret, dcs.encode(), _hl.sha256).hexdigest()
+    if not _hm.compare_digest(calc, tg_hash):
+        return {"ok": False, "error": "bad_hash"}
+    uid = int(data["id"])
+    db.upsert_user(uid, data.get("username") or "", data.get("first_name") or "")
+    key_row = db.get_active_key(uid)
+    if not key_row:
+        key = db.create_key(uid, "free")
+        key_row = db.validate_key(key)
+    plan = key_row["plan"] if key_row["plan"] in db.PLANS else "free"
+    return {"ok": True, "api_key": key_row["key"], "plan": plan,
+            "expires_at": key_row["expires_at"],
+            "rpd": db.PLANS[plan]["rpd"],
+            "username": data.get("username") or "",
+            "first_name": data.get("first_name") or ""}
 
 
 @app.post("/redeem", tags=["Account"], summary="Redeem a plan code (KEYARA-XXXXXXXXXX)")

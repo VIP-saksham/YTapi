@@ -1,3 +1,4 @@
+# BOT_UI_V2
 """
 tgbot.py
 --------
@@ -95,16 +96,18 @@ IST = pytz.timezone("Asia/Kolkata")
 # ── Keyboards ────────────────────────────────────────────────────────────────
 
 def main_menu_kb() -> InlineKeyboardMarkup:
+    # BOT_UI_V1: cleaner 2-per-row menu
     rows = [
-        [InlineKeyboardButton("🔑 My API Key",       callback_data="view_key")],
-        [InlineKeyboardButton("🌐 Website Sign-In",  callback_data="web_signin")],
-        [InlineKeyboardButton("📊 My Usage",         callback_data="my_usage")],
-        [InlineKeyboardButton("💎 Plans & Pricing",  callback_data="plans")],
+        [InlineKeyboardButton("🔑  My API Key", callback_data="view_key"),
+         InlineKeyboardButton("📊  My Usage", callback_data="my_usage")],
+        [InlineKeyboardButton("🌐  Website Sign-In", callback_data="web_signin")],
+        [InlineKeyboardButton("💎  Plans & Pricing", callback_data="plans"),
+         InlineKeyboardButton("🎟️  Redeem Code", callback_data="redeem_hint")],
         [
-            InlineKeyboardButton("🎫 Support",  callback_data="support_ticket"),
-            InlineKeyboardButton("💬 Feedback", callback_data="feedback"),
+            InlineKeyboardButton("🎫  Support",  callback_data="support_ticket"),
+            InlineKeyboardButton("💬  Feedback", callback_data="feedback"),
         ],
-        [InlineKeyboardButton("❓ Help & Docs",      callback_data="help")],
+        [InlineKeyboardButton("❓  Help & Docs", callback_data="help")],
     ]
     # URL buttons sirf tab jab URL set ho — empty URL Telegram reject karta hai
     url_row = []
@@ -362,7 +365,7 @@ def _payment_info(plan: str) -> str:
         "Screenshot ya *UTR number* yahin bhej do.",
         "Admin verify karega — plan turant active.",
         "",
-        "⚠️ _Payment ke baad ye chat band mat karna._",
+        "⚠️ _Do not close this chat after payment._",
     ]
     return "\n".join(lines)
 
@@ -393,24 +396,24 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     plan_cfg = db.PLANS.get(plan, db.PLANS["free"])
     rpd      = plan_cfg["rpd"]
     lim      = "Unlimited" if rpd == -1 else f"{rpd:,}"
-    api_url  = APP_URL or API_BASE_URL
+    api_url  = API_BASE_URL or APP_URL  # ENGLISH_V1 public site URL
 
     _wb = "━━━━━━━━━━━━━━━━━━━━"
     msg = (
-        f"⚡ *Welcome to {BOT_NAME}* — Blazing-Fast YouTube API\n\n"
+        f"⚡ *Welcome to {BOT_NAME}* — the blazing-fast music API\n\n"
         f"{_wb}\n"
-        f"🔑 *Your API Key:*\n"
+        f"🔑 *Your API Key*\n"
         f"`{key_row['key']}`\n\n"
         f"🌐 *Endpoint:* `{api_url}`\n"
-        f"📦 Plan: *{plan.upper()}* • 📊 {lim} req/day\n"
-        f"⏳ Expires: {days} days\n"
+        f"💎 *Plan:* *{plan.upper()}*  •  📊 {lim} req/day\n"
+        f"⏳ *Expires in:* {days} days\n"
         f"{_wb}\n\n"
-        f"🚀 *Quick Start:*\n"
-        f"1️⃣ /getfile — drop-in youtube.py lo\n"
-        f"2️⃣ Bot me `HELLAPI_URL` + `HELLAPI_KEY` set karo\n"
-        f"3️⃣ Done — 20ms cached streams! ⚡\n\n"
-        f"🌍 Website: keyaraapi.pages.dev\n"
-        f"📊 /usage — live usage stats"
+        f"🚀 *Get started in 3 steps*\n"
+        f"1️⃣  /getfile — grab the drop-in `youtube.py`\n"
+        f"2️⃣  Set `HELLAPI_URL` + `HELLAPI_KEY` in your bot\n"
+        f"3️⃣  Done — 20ms cached streams ⚡\n\n"
+        f"🌍 *Website:* keyaraapi.pages.dev\n"
+        f"📊 /usage — usage   •   ❓ /help — docs"
     )
     _photo = os.getenv("START_IMG", "")
     _sent = False
@@ -465,18 +468,18 @@ async def cmd_getfile(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     yt_caption = (
         f"🎵 *youtube.py — Drop-in Replacement*\n\n"
-        f"📌 *Yeh file apne music bot ke folder mein daalo*\n"
-        f"_(purani youtube.py replace kar do)_\n\n"
+        f"📌 *Put this file into your music bot folder*\n"
+        f"_(replace the old youtube.py)_\n\n"
         f"*Your credentials:*\n"
         f"🔑 Key: `{key_row['key']}`\n"
         f"🌐 URL: `{api_url}`\n\n"
-        f"*Setup (.env mein add karo):*\n"
+        f"*Setup (add to .env):*\n"
         f"```\n"
         f"HELLAPI_URL={api_url}\n"
         f"HELLAPI_KEY={key_row['key']}\n"
         f"```\n\n"
-        f"✅ Bas itna karo — koi aur change nahi\n"
-        f"⚠️ `.env` ko `.gitignore` mein add karo!"
+        f"✅ That is all — no other changes needed\n"
+        f"⚠️ `.env` to `.gitignore`!"
     )
 
     await update.message.reply_document(
@@ -584,8 +587,8 @@ async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     # 🔒 admin-only (users ko /usage milega)
     if not is_admin(update.effective_user.id):
         await update.message.reply_text(
-            "🔒 *API status sirf admin ke liye.*\n\n"
-            "Tum ye use karo:\n"
+            "🔒 *API status is for admins only.*\n\n"
+            "Use this instead:\n"
             "• /mykey — apni key\n"
             "• /usage — apni requests\n"
             "• /getfile — youtube.py\n"
@@ -619,7 +622,7 @@ async def cmd_apiurl(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if not is_admin(uid):
         await update.message.reply_text(
-            "🔒 Ye command sirf *ADMIN* ke liye hai.\n\n"
+            "🔒 This command is for *ADMIN* only.\n\n"
             "Tumhare liye:\n"
             "• /mykey — API key nikaalo\n"
             "• /usage — apni requests dekho\n"
@@ -915,6 +918,16 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     db.upsert_user(uid, user.username, user.first_name)
 
     # ── back ──────────────────────────────────────────────────────────────
+    if data == "redeem_hint":
+        return await safe_edit(
+            q,
+            "🎟️ *Redeem a Code*\n\n"
+            "Open the website → **Redeem** box → paste your `KEYARA-XXXXXXXXXX` code.\n"
+            "Sign in first so the code links to your account.\n\n"
+            "🌐 keyaraapi.pages.dev",
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=back_kb(),
+        )
     if data == "web_signin":
         return await _cb_web_signin(q, ctx, user)
 
@@ -1297,8 +1310,8 @@ async def on_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                     if p["user_id"] == uid and p["plan"] == plan), None)
         if dup:
             await update.message.reply_text(
-                f"⏳ Tumhara *{cfg['name']}* request #{dup['id']} pehle se "
-                f"pending hai. Admin verify kar raha hai — thoda ruko.",
+                f"⏳ Your *{cfg['name']}* request #{dup['id']} pehle se "
+                f"is already pending. The admin is verifying it — please wait.",
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=back_kb(),
             )
@@ -1322,7 +1335,7 @@ async def on_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"✅ *Payment Request Submitted!*\n\n"
             f"Plan: *{cfg['name']}*\n"
             f"Reference ID: `#{pay_id}`\n\n"
-            f"Admin verify karke plan activate kar dega.\n"
+            f"The admin will verify it and activate your plan.\n"
             f"For instant support: {SUPPORT_GROUP}",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=back_kb(),
@@ -1441,7 +1454,7 @@ async def renewal_reminder_loop(app):
                         f"⏳ *Key Expiry Reminder*\n\n"
                         f"Tumhari *{cfg['name']}* API key *{days_left} din* me "
                         f"expire ho jayegi ({fmt_ist(exp_str)}).\n\n"
-                        f"Renew karo to plan aur limits waise hi rahenge — "
+                        f"On renewal your plan and limits stay the same — "
                         f"naya key bhi same rahega:\n"
                         f"`{r['key']}`\n\n"
                         f"Key expire hone ke baad API requests fail hone lagengi.",
@@ -1599,10 +1612,10 @@ async def _cb_web_signin(q, ctx, user):
     await safe_edit(
         q,
         f"? *Website Sign-In*\n\n"
-        f"1?? Neeche button dabao \u2013 website khul jayegi, signed-in ke saath.\n"
-        f"2?? Ya manual code paste karo website ke Sign-In box me:\n"
+        f"1?? Tap the button below \u2013 website khul jayegi, signed-in ke saath.\n"
+        f"2?? Or paste the code manually into the website Sign-In box:\n"
         f"`{code}`\n\n"
-        f"Same API key website + bot dono jagah chalegi. ?",
+        f"The same API key works on both the website and the bot. ?",
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=kb,
     )
@@ -1611,7 +1624,7 @@ async def _cb_web_signin(q, ctx, user):
 async def cmd_redeemcode(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if uid not in ADMIN_IDS:
-        return await update.message.reply_text("? Sirf owner ye command use kar sakta hai.")
+        return await update.message.reply_text("? Only the owner can use this command.")
     parts = (update.message.text or "").split()
     if len(parts) < 2 or parts[1].lower() not in ("basic", "pro", "ultra"):
         return await update.message.reply_text(
@@ -1644,9 +1657,9 @@ async def cmd_redeem(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     res = db.redeem_code(parts[1], uid)
     if not res.get("ok"):
         errs = {
-            "invalid_code": "Galat code!",
-            "already_used": "Ye code pehle hi use ho chuka hai.",
-            "empty_code": "Code khali hai.",
+            "invalid_code": "Invalid code!",
+            "already_used": "This code has already been used.",
+            "empty_code": "The code is empty.",
         }
         return await update.message.reply_text(
             errs.get(res.get("error"), "Redemption fail."))
@@ -1655,7 +1668,7 @@ async def cmd_redeem(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"? *{res['plan'].upper()} PLAN ACTIVATED!* \n\n"
         f"Key: `{res['key']}`\n"
         f"Expires: {fmt_ist(key_row['expires_at'])}\n\n"
-        f"Yehi key bot + website dono jagah chalegi. /mykey se details.",
+        f"This key works on both the bot and the website. Use /mykey for details.",
         parse_mode=ParseMode.MARKDOWN,
     )
 

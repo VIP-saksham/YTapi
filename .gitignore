@@ -12,3 +12,10 @@ service.log
 keybot.log
 supervisor.log
 *.bak*
+cookies.txt
+savn_cache.json
+_site/.wrangler/
+open_cb_test.sh
+restart_api.sh
+verify_final.sh
+tgbot_supervisor.sh
